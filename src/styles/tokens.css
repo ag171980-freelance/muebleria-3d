@@ -1,0 +1,72 @@
+/*
+  TOKENS DEL CONFIGURADOR
+
+  Paleta: neutros frios de piedra con un unico acento verde profundo. Se eligio
+  deliberadamente fuera de la familia beige + laton + espresso que usa casi
+  cualquier sitio de carpinteria: con muebles de madera a la vista en pantalla,
+  un fondo calido le pelea el protagonismo a la madera y todo se vuelve barro.
+  Un neutro frio hace de cartulina y deja que el color del mueble se lea.
+
+  Hay un solo color semantico aparte del acento, --atencion, y se usa
+  exclusivamente en los avisos de viabilidad del mueble.
+
+  Radios: escala unica y documentada.
+    --r-chico   chips, muestras de madera, etiquetas
+    --r         inputs, botones, tarjetas
+    --r-grande  paneles y contenedores
+*/
+
+:root {
+  --papel: #f1f3f2;
+  --papel-2: #e7eae8;
+  --superficie: #fafbfa;
+  --superficie-2: #eef1ef;
+  --borde: #d3d8d5;
+  --borde-fuerte: #b4bcb8;
+  --tinta: #15191a;
+  --tinta-2: #4b5254;
+  --tinta-3: #5e6668;
+  --acento: #1f6b4c;
+  --acento-fuerte: #17543c;
+  --acento-suave: #e0ebe5;
+  --sobre-acento: #ffffff;
+  --atencion: #8a5a14;
+  --atencion-suave: #f4ecdc;
+  --sombra: 0 1px 2px rgb(21 25 26 / 0.05), 0 8px 24px -12px rgb(21 25 26 / 0.14);
+  --sombra-alta: 0 2px 4px rgb(21 25 26 / 0.06), 0 18px 48px -20px rgb(21 25 26 / 0.22);
+
+  --r-chico: 6px;
+  --r: 10px;
+  --r-grande: 14px;
+
+  --alto-barra: 64px;
+  --ancho-panel: 408px;
+  --curva: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --sans: 'Outfit Variable', 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  color-scheme: light;
+}
+
+:root[data-tema='oscuro'] {
+  --papel: #111413;
+  --papel-2: #171b1a;
+  --superficie: #1c2120;
+  --superficie-2: #232827;
+  --borde: #2d3433;
+  --borde-fuerte: #3e4746;
+  --tinta: #eef1f0;
+  --tinta-2: #a6b0b2;
+  --tinta-3: #899496;
+  --acento: #4fa37a;
+  --acento-fuerte: #65b890;
+  --acento-suave: #17302a;
+  --sobre-acento: #06140f;
+  --atencion: #d8a24a;
+  --atencion-suave: #2a2317;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.5);
+  --sombra-alta: 0 2px 4px rgb(0 0 0 / 0.35), 0 18px 48px -20px rgb(0 0 0 / 0.65);
+
+  color-scheme: dark;
+}
