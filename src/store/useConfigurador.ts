@@ -88,8 +88,12 @@ function configInicial(): { vista: Vista; config: Configuracion } {
     const compartido = decodificar(marca[1])
     if (compartido) return { vista: 'taller', config: compartido }
   }
+  // Al recargar, al restaurar la pestaña o al volver de otra pagina se vuelve a
+  // donde estaba el cliente: el hash dice en que pantalla andaba y el borrador
+  // tiene el mueble. Antes caia siempre en el catalogo y parecia que el mueble
+  // armado se habia perdido, justo despues de pasar un rato eligiendo medidas.
   const borrador = leerBorrador()
-  if (borrador) return { vista: 'catalogo', config: borrador }
+  if (borrador) return { vista: hash === '#/taller' ? 'taller' : 'catalogo', config: borrador }
   return { vista: 'catalogo', config: configuracionInicial('comoda') }
 }
 
@@ -118,6 +122,11 @@ export const useConfigurador = create<Estado>((set, get) => ({
   cargar: (config) => {
     const resultado = recalcular(config)
     guardarBorrador(resultado.config)
+    // Un link compartido se deja como esta: lleva el diseño adentro y el cliente
+    // puede querer copiarlo de la barra de direcciones.
+    if (!window.location.hash.startsWith('#/d/')) {
+      window.history.replaceState(null, '', window.location.pathname + '#/taller')
+    }
     set({ ...resultado, vista: 'taller', abierto: false, desarmado: false, piezaDestacada: null, piezaFijada: null })
   },
 
