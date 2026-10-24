@@ -176,11 +176,6 @@ export async function armarPdf(datos: DatosPdf): Promise<{ blob: Blob; base64: s
       texto(pieza.largo + ' x ' + pieza.ancho + ' x ' + pieza.espesor + ' mm', cols[2], y, { tam: 9, color: GRIS })
       y += 4.8
     }
-    y += 2
-    texto('Medidas en milímetros, ya con las luces y los espesores descontados.', HOJA.margen, y, {
-      tam: 8,
-      color: GRIS,
-    })
   }
 
   // --- Pie en todas las hojas ---
