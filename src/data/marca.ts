@@ -6,10 +6,12 @@
  * queda apagado hasta que lo confirmen.
  */
 export const MARCA = {
-  nombre: 'Ironwoods',
-  /** Su propia bajada, tal como la usan en el sitio. */
+  /** Como se llaman de verdad, segun los datos estructurados de su sitio. */
+  nombre: 'IRON & WOOD',
+  /** Su propia bajada, tal como la usan bajo el nombre en el encabezado. */
   bajada: 'Muebles de hierro y madera',
-  sello: 'IW',
+  /** Su logo dice "BELLA VISTA": es donde esta el taller. */
+  zona: 'Bella Vista',
   whatsapp: '5491154196090',
   instagram: 'iron.woods',
   sitio: 'https://ironwoods.com.ar',

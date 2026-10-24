@@ -125,7 +125,7 @@ export function Catalogo({ tema }: { tema: 'claro' | 'oscuro' }) {
       <footer className="pie">
         <div className="pie__cuerpo">
           <span>
-            {TALLER.nombre}, {TALLER.bajada.toLowerCase()}
+            {TALLER.nombre}, {TALLER.zona}
           </span>
           <a href={'https://instagram.com/' + TALLER.instagram} target="_blank" rel="noreferrer">
             @{TALLER.instagram}

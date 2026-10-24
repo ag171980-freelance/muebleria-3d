@@ -19,14 +19,14 @@ export function Encabezado({ resuelto, alternarTema }: Props) {
 
   return (
     <header className="barra">
+      {/*
+        El mismo lockup del encabezado del sitio: el nombre en la serif de la
+        marca y la bajada abajo, chica y espaciada. Se rehace con texto y no con
+        el PNG del logo porque asi se adapta al modo oscuro y no se pixela.
+      */}
       <button type="button" className="marca" onClick={verCatalogo}>
-        <span className="marca__sello" aria-hidden="true">
-          {TALLER.sello}
-        </span>
-        <span>
-          <span className="marca__nombre">{TALLER.nombre}</span>
-          <span className="marca__bajada">{TALLER.bajada}</span>
-        </span>
+        <span className="marca__nombre">{TALLER.nombre}</span>
+        <span className="marca__bajada">{TALLER.bajada}</span>
       </button>
 
       <span className="barra__espacio" />

@@ -82,31 +82,19 @@ a {
   border-bottom: 1px solid var(--borde);
 }
 
+/*
+  Mismo lockup que el encabezado del sitio: el nombre en Unna y debajo la
+  bajada en 10px, en mayusculas y bien espaciada.
+*/
 .marca {
-  display: flex;
+  display: block;
   min-width: 0;
-  align-items: center;
-  gap: 10px;
   background: none;
   border: 0;
   padding: 4px;
   margin-left: -4px;
   cursor: pointer;
   text-align: left;
-}
-
-.marca__sello {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--r-chico);
-  background: var(--acento);
-  color: var(--sobre-acento);
-  font-weight: 500;
-  font-size: 15px;
-  letter-spacing: 0.02em;
-  flex: none;
 }
 
 /*
@@ -129,18 +117,25 @@ a {
 }
 
 .marca__nombre {
-  font-size: 16px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  line-height: 1.15;
+  font-family: var(--serif);
+  font-size: 1.3125rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  color: var(--tinta);
 }
 
 .marca__bajada {
-  font-size: 10.5px;
+  /*
+    Su gris es #737880 y da 4,4 sobre blanco, apenas por debajo del minimo de
+    WCAG AA. Va el mismo gris dos pasos mas oscuro, que es --tinta-3.
+  */
+  font-size: 10px;
   color: var(--tinta-3);
-  line-height: 1.2;
+  line-height: 1.3;
+  margin-top: 1px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .barra__espacio {
