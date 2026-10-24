@@ -1,91 +1,54 @@
+/**
+ * MADERAS Y LAQUEADOS DE IRONWOODS
+ *
+ * La marca separa dos cosas que no son lo mismo y conviene no mezclar:
+ *
+ *   - La ESPECIE (`pa_madera` en su tienda): eucalipto o pino. Define la veta,
+ *     los nudos y el tono de base de la madera.
+ *   - El LAQUEADO (`pa_laqueado`): Natural, Cedro, Nogal, Roble claro o Roble
+ *     oscuro. Es el color con el que se laquea esa madera.
+ *
+ * Las dos listas salen de los selectores reales de ironwoods.com.ar. Los
+ * espesores tambien: 30 mm en tapas de escritorio y mesa, 20 mm en estantes,
+ * rack y cajonera.
+ *
+ * Los valores hexadecimales son aproximaciones de pantalla para que el cliente
+ * se haga una idea del tono. No son una carta de color calibrada, y la pantalla
+ * lo aclara: antes de laquear, el taller muestra la muestra real.
+ */
+
 export type Madera = {
   id: string
   nombre: string
   nota: string
-  /** Color base del material, en sRGB. */
-  color: string
-  /** Intensidad de la veta, 0 = superficie lisa (melamina), 1 = madera maciza marcada. */
+  /** Intensidad de la veta, 0 = lisa, 1 = muy marcada. */
   veta: number
-  /** Rugosidad base del acabado. El acabado elegido la modula. */
-  rugosidad: number
+  /** Si la especie muestra nudos a la vista. */
+  nudos: boolean
+  /**
+   * Correccion de tono que aporta la especie sobre el color del laqueado.
+   * El pino tira a amarillo y el eucalipto a rosado, y eso se nota incluso
+   * debajo de un laqueado oscuro.
+   */
+  tinte: [number, number, number]
 }
 
-/**
- * Catalogo de materiales del taller. Los colores son aproximaciones de muestra:
- * el cliente ve una referencia, no una carta de color calibrada. Esto se aclara en pantalla.
- */
 export const MADERAS: Madera[] = [
   {
-    id: 'melamina-blanco',
-    nombre: 'Melamina blanca',
-    nota: 'La opcion mas economica. Interior de placares y muebles de cocina.',
-    color: '#e8e6e1',
-    veta: 0,
-    rugosidad: 0.55,
-  },
-  {
-    id: 'melamina-grafito',
-    nombre: 'Melamina grafito',
-    nota: 'Gris oscuro parejo, sin veta. Marca poco las huellas.',
-    color: '#33363a',
-    veta: 0,
-    rugosidad: 0.6,
-  },
-  {
-    id: 'melamina-olmo',
-    nombre: 'Melamina olmo',
-    nota: 'Simil madera clara impresa. Veta suave y uniforme.',
-    color: '#c0a176',
-    veta: 0.35,
-    rugosidad: 0.62,
+    id: 'eucalipto',
+    nombre: 'Madera de Eucalipto',
+    nota: 'Grano cerrado y parejo, tono rosado. Es la que mas usan en tapas y estantes.',
+    veta: 0.6,
+    nudos: false,
+    tinte: [1.03, 0.98, 0.96],
   },
   {
     id: 'pino',
-    nombre: 'Pino Elliottis',
-    nota: 'Maciza, clara y liviana. Nudos a la vista.',
-    color: '#d6b183',
-    veta: 0.85,
-    rugosidad: 0.7,
-  },
-  {
-    id: 'guatambu',
-    nombre: 'Guatambu',
-    nota: 'Grano cerrado, color parejo. Buena para frentes pintados.',
-    color: '#dcc298',
-    veta: 0.5,
-    rugosidad: 0.6,
-  },
-  {
-    id: 'paraiso',
-    nombre: 'Paraiso',
-    nota: 'Veta marcada y tono miel. Clasica del Litoral.',
-    color: '#bd8f5f',
-    veta: 0.9,
-    rugosidad: 0.62,
-  },
-  {
-    id: 'eucalipto',
-    nombre: 'Eucalipto grandis',
-    nota: 'Rosado calido, estable. Muy usada en tableros alistonados.',
-    color: '#c58b6e',
-    veta: 0.7,
-    rugosidad: 0.65,
-  },
-  {
-    id: 'petiribi',
-    nombre: 'Petiribi',
-    nota: 'Marron medio con vetas oscuras. Dura y pesada.',
-    color: '#8d5736',
+    nombre: 'Madera de Pino',
+    nota: 'Mas clara y liviana, con nudos a la vista y veta marcada.',
     veta: 0.95,
-    rugosidad: 0.58,
-  },
-  {
-    id: 'nogal',
-    nombre: 'Nogal teñido',
-    nota: 'Tono oscuro profundo sobre guatambu teñido al agua.',
-    color: '#4b3226',
-    veta: 0.8,
-    rugosidad: 0.5,
+    nudos: true,
+    tinte: [1.02, 1.0, 0.92],
   },
 ]
 
@@ -95,33 +58,55 @@ export type Acabado = {
   id: string
   nombre: string
   nota: string
-  /** Se suma a la rugosidad del material. Valores negativos lo hacen mas brillante. */
-  deltaRugosidad: number
-  /** Capa de laca por encima, para reflejos nitidos. */
+  /** Color del laqueado, en sRGB. */
+  color: string
+  /** Rugosidad de la superficie laqueada. */
+  rugosidad: number
+  /** Capa de laca por encima, para los reflejos. */
   barniz: number
 }
 
+/** Los cinco tonos del selector de laqueado de la tienda. */
 export const ACABADOS: Acabado[] = [
   {
     id: 'natural',
-    nombre: 'Natural al aceite',
-    nota: 'Se ve y se siente la madera. Requiere mantenimiento anual.',
-    deltaRugosidad: 0.12,
-    barniz: 0,
+    nombre: 'Natural',
+    nota: 'Laca transparente. Se ve la madera como es, sin teñir.',
+    color: '#d6b689',
+    rugosidad: 0.52,
+    barniz: 0.45,
   },
   {
-    id: 'mate',
-    nombre: 'Laca mate',
-    nota: 'Protege sin brillo. El acabado mas pedido.',
-    deltaRugosidad: 0,
-    barniz: 0.25,
+    id: 'roble-claro',
+    nombre: 'Roble claro',
+    nota: 'Miel suave, el tono mas pedido para escritorios.',
+    color: '#c39a62',
+    rugosidad: 0.5,
+    barniz: 0.5,
   },
   {
-    id: 'satinado',
-    nombre: 'Laca satinada',
-    nota: 'Brillo suave, se limpia facil. Recomendado para cocina y baño.',
-    deltaRugosidad: -0.22,
-    barniz: 0.7,
+    id: 'cedro',
+    nombre: 'Cedro',
+    nota: 'Rojizo calido, levanta la veta.',
+    color: '#b06f3d',
+    rugosidad: 0.5,
+    barniz: 0.5,
+  },
+  {
+    id: 'roble-oscuro',
+    nombre: 'Roble oscuro',
+    nota: 'Marron tabaco. Contrasta fuerte con la estructura blanca.',
+    color: '#7a5433',
+    rugosidad: 0.48,
+    barniz: 0.52,
+  },
+  {
+    id: 'nogal',
+    nombre: 'Nogal',
+    nota: 'El mas oscuro. Con estructura negra el mueble se lee como una pieza sola.',
+    color: '#5b3922',
+    rugosidad: 0.46,
+    barniz: 0.55,
   },
 ]
 

@@ -21,7 +21,7 @@ export function Encabezado({ resuelto, alternarTema }: Props) {
     <header className="barra">
       <button type="button" className="marca" onClick={verCatalogo}>
         <span className="marca__sello" aria-hidden="true">
-          TM
+          {TALLER.sello}
         </span>
         <span>
           <span className="marca__nombre">{TALLER.nombre}</span>

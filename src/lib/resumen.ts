@@ -1,5 +1,6 @@
 import { ACABADO_POR_ID, MADERA_POR_ID } from '../data/maderas'
-import { BASE_POR_ID, HERRAJE_POR_ID, TERMINACION_POR_ID } from '../data/herrajes'
+import { BASE_POR_ID, HERRAJE_POR_ID } from '../data/herrajes'
+import { ESTRUCTURA_POR_ID } from '../data/marca'
 import { modeloDe } from '../data/modelos'
 import { medidaCorta } from './formato'
 import type { Computo } from './computo'
@@ -16,14 +17,15 @@ export function resumenDelPedido(c: Configuracion, d: Despiece, computo: Computo
   const madera = MADERA_POR_ID.get(c.maderaId)
   const acabado = ACABADO_POR_ID.get(c.acabadoId)
   const herraje = HERRAJE_POR_ID.get(c.herrajeId)
-  const terminacion = TERMINACION_POR_ID.get(c.terminacionHerrajeId)
+  const estructura = ESTRUCTURA_POR_ID.get(c.estructuraId)
   const base = BASE_POR_ID.get(c.baseId)
 
   const resumen: Record<string, string> = {
     Mueble: modelo.nombre,
     Medidas: medidaCorta(c.ancho) + ' x ' + medidaCorta(c.alto) + ' x ' + medidaCorta(c.profundidad) + ' cm (ancho x alto x profundidad)',
-    Placa: (madera?.nombre ?? '') + ', ' + c.espesor + ' mm',
-    Terminacion: acabado?.nombre ?? '',
+    Madera: (madera?.nombre ?? '') + ' maciza de ' + c.espesor + ' mm',
+    Laqueado: acabado?.nombre ?? '',
+    Estructura: (estructura?.nombre ?? '') + ', pintura epoxi al horno',
   }
 
   if (d.cajones.length > 0) {
@@ -42,10 +44,9 @@ export function resumenDelPedido(c: Configuracion, d: Despiece, computo: Computo
   }
   if (c.cantidadEstantes > 0) resumen.Estantes = String(c.cantidadEstantes)
   if (d.barrales.length > 0) resumen.Barral = 'si'
+  if (c.conEstanteCpu) resumen['Bandeja CPU'] = 'si'
   resumen.Fondo = c.conFondo ? 'cerrado' : 'abierto'
-  if (herraje && d.cajones.length + d.puertas.length > 0) {
-    resumen.Herraje = herraje.nombre + (c.herrajeId === 'uñero' ? '' : ', ' + (terminacion?.nombre ?? ''))
-  }
+  if (herraje && d.cajones.length + d.puertas.length > 0) resumen.Herraje = herraje.nombre
   if (base) resumen.Base = base.nombre + (base.id === 'ninguna' ? '' : ' de ' + medidaCorta(c.alturaBase) + ' cm')
 
   resumen.Placas = computo.placasEnteras + ' placas de 1,83 x 2,60 m'

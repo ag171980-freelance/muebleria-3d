@@ -1,3 +1,4 @@
+import { medidaDePata } from './geometria'
 import type { Despiece, Material, V3 } from './geometria'
 
 export type PiezaDeLista = {
@@ -58,10 +59,11 @@ export function listaDePiezas(d: Despiece): Despiece3D {
 
   for (const panel of d.paneles) sumar(panel.nombre, panel.medida, panel.mat, panel.id)
 
-  for (const pata of d.patas) {
-    // La pata torneada sale de un taco cuadrado: se pide por su seccion, no por su diametro.
-    sumar(pata.nombre, [pata.seccion, pata.altura, pata.seccion], pata.mat, pata.id)
-  }
+  // El conjunto soldado va como una sola pieza, con la medida del marco entero.
+  for (const conjunto of d.conjuntos) sumar(conjunto.nombre, conjunto.medida, conjunto.mat, conjunto.id)
+
+  // Los postes del marco se piden por el largo de caño, igual que un listón.
+  for (const pata of d.patas) sumar(pata.nombre, medidaDePata(pata), pata.mat, pata.id)
 
   for (const cajon of d.cajones) {
     sumar('Frente de cajon', cajon.frente.medida, 'placa', cajon.id + '-frente')

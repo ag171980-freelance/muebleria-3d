@@ -1,5 +1,6 @@
 import { HERRAJE_POR_ID } from '../data/herrajes'
 import { CORTE } from '../data/corte'
+import { medidaDePata } from './geometria'
 import type { Caja, Despiece, V3 } from './geometria'
 import type { Configuracion } from './tipos'
 
@@ -76,10 +77,14 @@ export function computar(c: Configuracion, d: Despiece): Computo {
     for (const pieza of cajon.interior) sumar(pieza, false)
   }
   for (const puerta of d.puertas) sumar({ medida: puerta.hoja.medida, mat: 'placa' }, true)
+  // Un marco soldado se pide entero: cuenta como una pieza, no como sus caños.
+  piezas += d.conjuntos.length
+
   for (const pata of d.patas) {
     piezas++
     if (pata.mat === 'placa') {
-      const area = (pata.seccion * pata.altura * 4) / 1e6
+      const m = medidaDePata(pata)
+      const area = (m[0] * m[1] * 2 + m[1] * m[2] * 2) / 1e6
       placaM2 += area
       pesoKg += area * PESO_M2.placa
     }

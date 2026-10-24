@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { configuracionInicial, modeloDe } from '../data/modelos'
 import { BASE_POR_ID } from '../data/herrajes'
+import { PATA_POR_ID } from '../data/marca'
 import { fijarAlturaCajon, normalizarAlturas } from '../lib/cajones'
 import { armar, type Despiece } from '../lib/geometria'
 import { computar, type Computo } from '../lib/computo'
@@ -25,7 +26,8 @@ type Estado = {
   piezas: PiezaDeLista[]
   computo: Computo
   verCatalogo: () => void
-  elegirModelo: (modeloId: string) => void
+  /** `ajustes` trae lo que el cliente ya eligio en la tarjeta del catalogo. */
+  elegirModelo: (modeloId: string, ajustes?: Partial<Configuracion>) => void
   cargar: (config: Configuracion) => void
   ajustar: (cambios: Partial<Configuracion>) => void
   ajustarAlturaCajon: (indice: number, mm: number) => void
@@ -56,13 +58,15 @@ function recalcular(config: Configuracion): Pick<Estado, 'config' | 'despiece' |
     ancho: limitar(config.ancho, rangos.ancho),
     alto,
     profundidad: limitar(config.profundidad, rangos.profundidad),
-    espesor: config.espesor === 25 ? 25 : 18,
+    espesor: config.espesor === 30 ? 30 : 20,
     cantidadCajones: Math.max(0, Math.min(modelo.maxCajones, Math.round(config.cantidadCajones))),
     cantidadEstantes: Math.max(0, Math.min(modelo.maxEstantes, Math.round(config.cantidadEstantes))),
     cantidadPuertas: modelo.puertasPosibles.includes(config.cantidadPuertas)
       ? config.cantidadPuertas
       : modelo.puertasPosibles[0],
     columnasCajones: Math.max(1, Math.min(Math.max(1, modelo.maxColumnasCajones), Math.round(config.columnasCajones))),
+    estructuraId: config.estructuraId === 'blanca' ? 'blanca' : 'negra',
+    tipoPataId: PATA_POR_ID.has(config.tipoPataId) ? config.tipoPataId : 'marco',
     // Si el mueble no ofrece el tipo guardado (por un link viejo), cae en el primero.
     tipoPuerta: modelo.tiposPuerta.includes(config.tipoPuerta) ? config.tipoPuerta : (modelo.tiposPuerta[0] ?? 'batiente'),
     alturaBase,
@@ -104,8 +108,8 @@ export const useConfigurador = create<Estado>((set, get) => ({
     set({ vista: 'catalogo' })
   },
 
-  elegirModelo: (modeloId) => {
-    const resultado = recalcular(configuracionInicial(modeloId))
+  elegirModelo: (modeloId, ajustes) => {
+    const resultado = recalcular({ ...configuracionInicial(modeloId), ...ajustes })
     guardarBorrador(resultado.config)
     window.history.replaceState(null, '', window.location.pathname + '#/taller')
     set({ ...resultado, vista: 'taller', abierto: false, desarmado: false, piezaDestacada: null, piezaFijada: null })

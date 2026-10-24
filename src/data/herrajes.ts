@@ -8,17 +8,16 @@ export type Herraje = {
   largo: number
 }
 
+/**
+ * Tiradores. Van siempre en la misma pintura epoxi que la estructura: en un
+ * mueble de hierro y madera el herraje es parte del hierro, no una pieza
+ * suelta, y por eso no hay una eleccion aparte de terminacion del metal.
+ */
 export const HERRAJES: Herraje[] = [
   {
-    id: 'perilla',
-    nombre: 'Perilla redonda',
-    nota: 'Una sola fijacion. Clasica para cajoneras y mesas de luz.',
-    largo: 32,
-  },
-  {
     id: 'barral',
-    nombre: 'Barral recto',
-    nota: 'Tubo con dos soportes. Comodo para cajones cargados.',
+    nombre: 'Barral de hierro',
+    nota: 'Caño con dos soportes, al tono de la estructura. Es el de la casa.',
     largo: 160,
   },
   {
@@ -30,8 +29,14 @@ export const HERRAJES: Herraje[] = [
   {
     id: 'perfil-j',
     nombre: 'Perfil J continuo',
-    nota: 'Se amura al canto superior del frente. Linea sin interrupciones.',
+    nota: 'Se amura al canto del frente. Linea sin interrupciones.',
     largo: 0,
+  },
+  {
+    id: 'perilla',
+    nombre: 'Perilla redonda',
+    nota: 'Una sola fijacion. Para mesas de luz y cajoneras chicas.',
+    largo: 32,
   },
   {
     id: 'uñero',
@@ -43,30 +48,7 @@ export const HERRAJES: Herraje[] = [
 
 export const HERRAJE_POR_ID = new Map(HERRAJES.map((h) => [h.id, h]))
 
-export type TerminacionHerraje = {
-  id: string
-  nombre: string
-  color: string
-  metalico: number
-  rugosidad: number
-}
-
-/**
- * Los valores de `metalico` quedan por debajo de 0,8 a proposito. Un metal puro
- * casi no tiene componente difusa: si el mapa de entorno no llega a generarse,
- * el herraje se dibuja negro. Asi se ve bien con luz directa sola y gana brillo
- * cuando el entorno esta disponible.
- */
-export const TERMINACIONES: TerminacionHerraje[] = [
-  { id: 'acero', nombre: 'Acero inoxidable', color: '#c2c6c9', metalico: 0.72, rugosidad: 0.3 },
-  { id: 'negro', nombre: 'Negro mate', color: '#2b2d2f', metalico: 0.4, rugosidad: 0.62 },
-  { id: 'bronce', nombre: 'Bronce envejecido', color: '#9a7743', metalico: 0.7, rugosidad: 0.44 },
-  { id: 'aluminio', nombre: 'Aluminio anodizado', color: '#a7adb0', metalico: 0.68, rugosidad: 0.42 },
-]
-
-export const TERMINACION_POR_ID = new Map(TERMINACIONES.map((t) => [t.id, t]))
-
-export type TipoBase = 'zocalo' | 'patas-metal' | 'patas-madera' | 'ninguna'
+export type TipoBase = 'patas-hierro' | 'ruedas' | 'ninguna'
 
 export type Base = {
   id: TipoBase
@@ -76,29 +58,28 @@ export type Base = {
   altura: number
 }
 
+/**
+ * Como apoya el mueble. Las tres son las que aparecen en el catalogo de la
+ * marca: caño de hierro en el rack y las mesas de luz, ruedas giratorias en la
+ * cajonera movil, y apoyo directo cuando el mueble va amurado.
+ */
 export const BASES: Base[] = [
   {
-    id: 'zocalo',
-    nombre: 'Zocalo retirado',
-    nota: 'El mueble apoya sobre un cajon de madera retirado del frente.',
-    altura: 80,
-  },
-  {
-    id: 'patas-metal',
+    id: 'patas-hierro',
     nombre: 'Patas de hierro',
-    nota: 'Caño de seccion cuadrada pintado. Se ve el piso por debajo.',
+    nota: 'Caño de seccion cuadrada, en la misma pintura que la estructura.',
     altura: 140,
   },
   {
-    id: 'patas-madera',
-    nombre: 'Patas de madera',
-    nota: 'Torneadas y conicas, en la misma madera del mueble.',
-    altura: 150,
+    id: 'ruedas',
+    nombre: 'Ruedas giratorias',
+    nota: 'Cuatro ruedas, dos con freno. Es lo que lleva la cajonera movil.',
+    altura: 75,
   },
   {
     id: 'ninguna',
     nombre: 'Apoyo directo',
-    nota: 'El lateral llega al piso. Para muebles que van amurados.',
+    nota: 'El lateral llega al piso. Para muebles que van contra la pared.',
     altura: 0,
   },
 ]

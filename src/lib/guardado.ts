@@ -1,9 +1,10 @@
 import { configuracionInicial, MODELO_POR_ID } from '../data/modelos'
+import { MARCA } from '../data/marca'
 import { normalizarAlturas } from './cajones'
 import type { Configuracion } from './tipos'
 
-const CLAVE_DISENIOS = 'mendia.disenios.v1'
-const CLAVE_BORRADOR = 'mendia.borrador.v1'
+const CLAVE_DISENIOS = 'ironwoods.disenios.v1'
+const CLAVE_BORRADOR = 'ironwoods.borrador.v1'
 
 export type DisenioGuardado = {
   id: string
@@ -23,14 +24,8 @@ export type DatosContacto = {
   comentarios: string
 }
 
-/** El taller al que se le pide el presupuesto. Cambiar por los datos reales. */
-export const TALLER = {
-  nombre: 'Taller Mendia',
-  bajada: 'Carpinteria a medida',
-  whatsapp: '5491128470193',
-  email: 'presupuestos@tallermendia.com.ar',
-  zona: 'Sarandi, Avellaneda',
-}
+/** Se re-exporta para no tocar todas las pantallas: los datos viven en marca.ts. */
+export const TALLER = MARCA
 
 function esConfiguracion(valor: unknown): valor is Configuracion {
   if (!valor || typeof valor !== 'object') return false
@@ -204,7 +199,7 @@ export function descargar(nombre: string, contenido: string, tipo: string): void
 /** Texto para mandar por WhatsApp cuando el cliente prefiere escribir. */
 export function mensajeWhatsapp(pedido: Pick<Pedido, 'resumen' | 'enlace' | 'contacto'>): string {
   const lineas = [
-    'Hola! Armé un mueble en la pagina y quiero presupuestarlo.',
+    'Hola! Armé un mueble en la pagina de Ironwoods y quiero presupuestarlo.',
     '',
     ...Object.entries(pedido.resumen).map(([clave, valor]) => clave + ': ' + valor),
     '',

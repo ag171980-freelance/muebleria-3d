@@ -22,7 +22,7 @@ function aleatorio(semilla: number) {
  * color de la madera), como `bumpMap` y como `roughnessMap`, asi que una sola
  * textura alcanza para las nueve maderas del catalogo.
  */
-function dibujarGrano(intensidad: number): THREE.Texture {
+function dibujarGrano(intensidad: number, nudos: boolean): THREE.Texture {
   const lado = 512
   const lienzo = document.createElement('canvas')
   lienzo.width = lado
@@ -57,8 +57,8 @@ function dibujarGrano(intensidad: number): THREE.Texture {
     ctx.stroke()
   }
 
-  // Nudos: solo en maderas macizas con veta marcada.
-  if (intensidad > 0.6) {
+  // Nudos: solo las especies que los tienen. El pino los muestra, el eucalipto no.
+  if (nudos) {
     const nudos = Math.round(intensidad * 3)
     for (let i = 0; i < nudos; i++) {
       const cx = 60 + rnd() * (lado - 120)
@@ -92,11 +92,11 @@ function dibujarGrano(intensidad: number): THREE.Texture {
   return textura
 }
 
-function granoBase(intensidad: number): THREE.Texture {
-  const clave = intensidad.toFixed(1)
+function granoBase(intensidad: number, nudos: boolean): THREE.Texture {
+  const clave = intensidad.toFixed(1) + (nudos ? '|n' : '')
   let textura = texturasBase.get(clave)
   if (!textura) {
-    textura = dibujarGrano(Number(clave))
+    textura = dibujarGrano(Number(intensidad.toFixed(1)), nudos)
     texturasBase.set(clave, textura)
   }
   return textura
@@ -123,14 +123,14 @@ function encuadre(medida: V3, grano: Eje): { repeticion: [number, number]; rotac
   return { repeticion: [dim(ejeU) / ESCALA_GRANO, dim(ejeV) / ESCALA_GRANO], rotacion: 0 }
 }
 
-function mapaPara(medida: V3, grano: Eje, intensidad: number): THREE.Texture {
+function mapaPara(medida: V3, grano: Eje, intensidad: number, nudos: boolean): THREE.Texture {
   const { repeticion, rotacion } = encuadre(medida, grano)
   const rx = Math.max(0.08, Math.round(repeticion[0] * 20) / 20)
   const ry = Math.max(0.08, Math.round(repeticion[1] * 20) / 20)
-  const clave = intensidad.toFixed(1) + '|' + rx + '|' + ry + '|' + rotacion.toFixed(2)
+  const clave = intensidad.toFixed(1) + (nudos ? 'n' : '') + '|' + rx + '|' + ry + '|' + rotacion.toFixed(2)
   let textura = texturasMapeadas.get(clave)
   if (!textura) {
-    textura = granoBase(intensidad).clone()
+    textura = granoBase(intensidad, nudos).clone()
     textura.needsUpdate = true
     textura.repeat.set(rx, ry)
     textura.center.set(0.5, 0.5)
@@ -161,33 +161,40 @@ function podar() {
 
 export function materialDe({ maderaId, acabadoId, mat, medida, grano }: ClaveMaterial): THREE.MeshPhysicalMaterial {
   const madera = MADERA_POR_ID.get(maderaId) ?? MADERA_POR_ID.values().next().value!
-  const acabado = ACABADO_POR_ID.get(acabadoId)
+  const acabado = ACABADO_POR_ID.get(acabadoId) ?? ACABADO_POR_ID.values().next().value!
+  // El fondo de fibrofacil se laquea al tono pero se ve mas apagado y sin veta.
   const veta = mat === 'fondo' ? Math.min(madera.veta, 0.25) : madera.veta
+  const nudos = mat === 'fondo' ? false : madera.nudos
   const { repeticion, rotacion } = encuadre(medida, grano)
   const rx = Math.max(0.08, Math.round(repeticion[0] * 20) / 20)
   const ry = Math.max(0.08, Math.round(repeticion[1] * 20) / 20)
-  const clave = [maderaId, acabadoId, mat, veta.toFixed(1), rx, ry, rotacion.toFixed(2)].join('|')
+  const clave = [maderaId, acabadoId, mat, veta.toFixed(1), nudos, rx, ry, rotacion.toFixed(2)].join('|')
 
   const guardado = materiales.get(clave)
   if (guardado) return guardado
 
   podar()
-  const rugosidad = Math.max(0.06, Math.min(1, madera.rugosidad + (acabado?.deltaRugosidad ?? 0)))
-  // El fondo de fibrofacil se ve mas apagado que el frente, incluso pintado al tono.
-  const color = new THREE.Color(madera.color)
+  // El color es el del laqueado; la especie solo le corre el tono, porque el
+  // pino tira a amarillo y el eucalipto a rosado incluso debajo de la laca.
+  const color = new THREE.Color(acabado.color)
+  color.setRGB(
+    Math.min(1, color.r * madera.tinte[0]),
+    Math.min(1, color.g * madera.tinte[1]),
+    Math.min(1, color.b * madera.tinte[2]),
+  )
   if (mat === 'fondo') color.multiplyScalar(0.82)
 
   const material = new THREE.MeshPhysicalMaterial({
     color,
-    roughness: rugosidad,
+    roughness: Math.max(0.06, Math.min(1, acabado.rugosidad)),
     metalness: 0,
-    clearcoat: acabado?.barniz ?? 0,
+    clearcoat: acabado.barniz,
     clearcoatRoughness: 0.25,
-    envMapIntensity: 0.8,
+    envMapIntensity: 0.5,
   })
 
   if (veta > 0.02) {
-    const mapa = mapaPara(medida, grano, veta)
+    const mapa = mapaPara(medida, grano, veta, nudos)
     material.map = mapa
     material.bumpMap = mapa
     material.bumpScale = veta * 0.5

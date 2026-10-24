@@ -1,72 +1,93 @@
 /*
-  TOKENS DEL CONFIGURADOR
+  TOKENS DE IRONWOODS
 
-  Paleta: neutros frios de piedra con un unico acento verde profundo. Se eligio
-  deliberadamente fuera de la familia beige + laton + espresso que usa casi
-  cualquier sitio de carpinteria: con muebles de madera a la vista en pantalla,
-  un fondo calido le pelea el protagonismo a la madera y todo se vuelve barro.
-  Un neutro frio hace de cartulina y deja que el color del mueble se lea.
+  Todos los valores de abajo salen del sitio real (ironwoods.com.ar), no de una
+  interpretacion del nombre de la marca. Se leyeron del CSS que sirve el tema
+  Astra, de sus variables --ast-global-color-N:
 
-  Hay un solo color semantico aparte del acento, --atencion, y se usa
-  exclusivamente en los avisos de viabilidad del mueble.
+    #151616  casi negro, es el color de fondo de sus botones, encabezado y pie
+    #393C40  gris oscuro
+    #65696F  gris secundario
+    #737880  gris primario
+    #F6F6F6  superficie clara
+    #FFFFFF  fondo de pagina
 
-  Radios: escala unica y documentada.
+  La paleta es monocromatica: no hay ningun color de acento. Es coherente con el
+  producto, que es hierro pintado al horno en blanco o negro mas madera laqueada.
+  La unica calidez de la pagina tiene que venir de la madera del visor, asi que
+  la interfaz se mantiene neutra a proposito y no le pelea el protagonismo.
+
+  UNICA DESVIACION: su gris mas claro, #737880, da 4,11 sobre #F6F6F6 y no llega
+  al minimo de 4,5 de WCAG AA para texto chico. Para --tinta-3 se usa #676C72,
+  que es el mismo gris dos pasos mas oscuro y da 4,90. El resto son sus valores
+  exactos.
+
+  Radios: el sitio usa 3px en casi todo (70 apariciones contra 14 de 0px).
+  Escala unica y documentada, casi recta, como corresponde a un mueble de hierro.
     --r-chico   chips, muestras de madera, etiquetas
     --r         inputs, botones, tarjetas
     --r-grande  paneles y contenedores
 */
 
 :root {
-  --papel: #f1f3f2;
-  --papel-2: #e7eae8;
-  --superficie: #fafbfa;
-  --superficie-2: #eef1ef;
-  --borde: #d3d8d5;
-  --borde-fuerte: #b4bcb8;
-  --tinta: #15191a;
-  --tinta-2: #4b5254;
-  --tinta-3: #5e6668;
-  --acento: #1f6b4c;
-  --acento-fuerte: #17543c;
-  --acento-suave: #e0ebe5;
+  --papel: #ffffff;
+  --papel-2: #f6f6f6;
+  --superficie: #ffffff;
+  --superficie-2: #f6f6f6;
+  --borde: #e4e5e6;
+  --borde-fuerte: #c6c8ca;
+  --tinta: #151616;
+  --tinta-2: #65696f;
+  --tinta-3: #676c72;
+  --acento: #151616;
+  --acento-fuerte: #393c40;
+  --acento-suave: #ececed;
   --sobre-acento: #ffffff;
-  --atencion: #8a5a14;
-  --atencion-suave: #f4ecdc;
-  --sombra: 0 1px 2px rgb(21 25 26 / 0.05), 0 8px 24px -12px rgb(21 25 26 / 0.14);
-  --sombra-alta: 0 2px 4px rgb(21 25 26 / 0.06), 0 18px 48px -20px rgb(21 25 26 / 0.22);
+  /* Unico color del sistema: avisos de viabilidad. Tono tomado del laqueado
+     Cedro, para que lo calido de la pagina siga siendo la madera. */
+  --atencion: #7d5a2a;
+  --atencion-suave: #f4efe6;
+  --sombra: 0 1px 2px rgb(21 22 22 / 0.06), 0 8px 24px -12px rgb(21 22 22 / 0.16);
+  --sombra-alta: 0 2px 4px rgb(21 22 22 / 0.07), 0 18px 48px -20px rgb(21 22 22 / 0.24);
 
-  --r-chico: 6px;
-  --r: 10px;
-  --r-grande: 14px;
+  --r-chico: 2px;
+  --r: 3px;
+  --r-grande: 4px;
 
   --alto-barra: 64px;
   --ancho-panel: 408px;
   --curva: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --sans: 'Outfit Variable', 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  /* Las dos familias que carga el sitio: DM Sans 400/500 y Unna 400 en titulos. */
+  --sans: 'DM Sans Variable', 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --serif: 'Unna', Georgia, 'Times New Roman', serif;
 
   color-scheme: light;
 }
 
+/*
+  La marca no publica un modo oscuro. Este se deriva de su misma paleta: el
+  #151616 de sus botones pasa a ser el fondo y el #F6F6F6 de sus superficies
+  pasa a ser la tinta. Es la misma inversion que ya hacen sus botones.
+*/
 :root[data-tema='oscuro'] {
-  --papel: #111413;
-  --papel-2: #171b1a;
-  --superficie: #1c2120;
-  --superficie-2: #232827;
-  --borde: #2d3433;
-  --borde-fuerte: #3e4746;
-  --tinta: #eef1f0;
-  --tinta-2: #a6b0b2;
-  --tinta-3: #899496;
-  --acento: #4fa37a;
-  --acento-fuerte: #65b890;
-  --acento-suave: #17302a;
-  --sobre-acento: #06140f;
+  --papel: #151616;
+  --papel-2: #1c1d1d;
+  --superficie: #202121;
+  --superficie-2: #292a2a;
+  --borde: #343535;
+  --borde-fuerte: #4a4c4c;
+  --tinta: #f6f6f6;
+  --tinta-2: #b9bcbf;
+  --tinta-3: #9a9ea3;
+  --acento: #f6f6f6;
+  --acento-fuerte: #ffffff;
+  --acento-suave: #2c2e2e;
+  --sobre-acento: #151616;
   --atencion: #d8a24a;
   --atencion-suave: #2a2317;
-  --sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.5);
-  --sombra-alta: 0 2px 4px rgb(0 0 0 / 0.35), 0 18px 48px -20px rgb(0 0 0 / 0.65);
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  --sombra-alta: 0 2px 4px rgb(0 0 0 / 0.45), 0 18px 48px -20px rgb(0 0 0 / 0.7);
 
   color-scheme: dark;
 }

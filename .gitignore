@@ -1,4 +1,7 @@
 node_modules
 dist
+tsconfig.tsbuildinfo
+
+# Pedidos recibidos: datos de clientes, no van al repositorio.
 api/data
 public/api/data

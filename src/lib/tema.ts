@@ -1,18 +1,47 @@
 import { useCallback, useEffect, useState } from 'react'
 
 export type Tema = 'auto' | 'claro' | 'oscuro'
-const CLAVE = 'mendia.tema.v1'
+const CLAVE = 'ironwoods.tema.v1'
 
 /** Fondo de la escena 3D por tema. Tiene que coincidir con --papel-2 de tokens.css. */
 export const FONDO_ESCENA: Record<'claro' | 'oscuro', string> = {
-  claro: '#e7eae8',
-  oscuro: '#171b1a',
+  claro: '#f6f6f6',
+  oscuro: '#1c1d1d',
 }
 
-/** Acento para el contorno de la pieza señalada. Es el mismo --acento de tokens.css. */
+/**
+ * Piso y pared del ambiente que rodea al mueble.
+ *
+ * La pared va casi blanca y el piso bastante mas oscuro. No es solo gusto: la
+ * estructura es hierro pintado de negro o de blanco, y la pata se ve parada
+ * contra la pared, no contra el piso. Con la pared clara el hierro negro se
+ * recorta, y con el piso oscuro el hierro blanco tambien.
+ *
+ * En modo oscuro el negro sobre un piso oscuro da 1,1 de contraste: no hay
+ * valor de piso que lo salve, es negro sobre negro. Por eso ahi el contraste lo
+ * carga la pared, que va bastante mas clara que el resto del tema, y el piso
+ * queda apenas por encima del negro para que el travesaño de abajo se lea.
+ */
+/*
+ * Ojo con estos valores: son albedo, no el gris que termina en pantalla. El
+ * piso mira de frente al foco, asi que la luz lo levanta bastante. Para que se
+ * vea gris medio hay que pintarlo mas oscuro de lo que uno esperaria.
+ */
+export const AMBIENTE: Record<'claro' | 'oscuro', { piso: string; pared: string }> = {
+  claro: { piso: '#6f6f6c', pared: '#f6f6f5' },
+  oscuro: { piso: '#232424', pared: '#4a4b4b' },
+}
+
+/**
+ * Contorno de la pieza señalada en el visor. Es el mismo --acento de tokens.css.
+ * La marca es monocromatica, asi que el contorno va en su casi negro sobre claro
+ * y en su blanco roto sobre oscuro. Contra un laqueado del mismo extremo (nogal
+ * en claro, natural en oscuro) queda sutil, y por eso la identificacion de la
+ * pieza se apoya ademas en la franja de abajo y en la fila de la lista.
+ */
 export const ACENTO_ESCENA: Record<'claro' | 'oscuro', string> = {
-  claro: '#1f6b4c',
-  oscuro: '#4fa37a',
+  claro: '#151616',
+  oscuro: '#f6f6f6',
 }
 
 function leerPreferencia(): Tema {

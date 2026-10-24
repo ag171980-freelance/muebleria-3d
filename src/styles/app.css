@@ -14,7 +14,6 @@ body {
   margin: 0;
   background: var(--papel);
   color: var(--tinta);
-  font-family: var(--sans);
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -28,12 +27,15 @@ p {
   margin: 0;
 }
 
+/* Ironwoods titula con Unna en 400. Es una serif, asi que no lleva el
+   apretado de letra que pide una grotesca: va con espaciado normal. */
 h1,
 h2,
 h3 {
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.12;
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.15;
 }
 
 button,
@@ -56,8 +58,9 @@ a {
   border-radius: var(--r-chico);
 }
 
+/* DM Sans trae cifras tabulares: con tnum las medidas se alinean en columna
+   sin necesidad de meter una monoespaciada que la marca no usa. */
 .num {
-  font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
@@ -100,9 +103,9 @@ a {
   border-radius: var(--r-chico);
   background: var(--acento);
   color: var(--sobre-acento);
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: -0.04em;
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.02em;
   flex: none;
 }
 
@@ -113,11 +116,9 @@ a {
 */
 .marca__nombre,
 .marca__bajada,
-.tarjeta-modelo__lienzo,
 .tarjeta-modelo__cuerpo,
 .tarjeta-modelo__nombre,
 .tarjeta-modelo__resumen,
-.tarjeta-modelo__medidas,
 .guardado__foto,
 .opcion__cuerpo,
 .opcion__titulo,
@@ -128,16 +129,18 @@ a {
 }
 
 .marca__nombre {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   line-height: 1.15;
 }
 
 .marca__bajada {
-  font-size: 11.5px;
+  font-size: 10.5px;
   color: var(--tinta-3);
   line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .barra__espacio {
@@ -331,55 +334,103 @@ a {
 .tarjeta-modelo {
   display: flex;
   flex-direction: column;
-  text-align: left;
-  padding: 0;
   background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--r-grande);
   overflow: hidden;
-  cursor: pointer;
   transition:
     border-color 180ms var(--curva),
-    box-shadow 180ms var(--curva),
-    transform 180ms var(--curva);
+    box-shadow 180ms var(--curva);
 }
 
 .tarjeta-modelo:hover {
-  border-color: var(--acento);
-  box-shadow: var(--sombra-alta);
-  transform: translateY(-2px);
+  border-color: var(--borde-fuerte);
+  box-shadow: var(--sombra);
 }
 
-.tarjeta-modelo:active {
-  transform: translateY(0);
-}
-
-.tarjeta-modelo__lienzo {
+.tarjeta-modelo__vista {
+  display: block;
+  width: 100%;
   aspect-ratio: 16 / 11;
-  background: var(--papel-2);
+  padding: 0;
+  border: 0;
   border-bottom: 1px solid var(--borde);
+  background: var(--papel-2);
+  cursor: pointer;
 }
 
 .tarjeta-modelo__cuerpo {
-  padding: 16px 18px 18px;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px 16px;
 }
 
 .tarjeta-modelo__nombre {
-  font-size: 1.0625rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  font-family: var(--serif);
+  font-size: 1.1875rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.tarjeta-modelo__enlace {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tarjeta-modelo__enlace:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .tarjeta-modelo__resumen {
-  margin-top: 6px;
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--tinta-2);
 }
 
-.tarjeta-modelo__medidas {
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--tinta-3);
+.tarjeta-modelo__opciones {
+  display: grid;
+  gap: 6px;
+  margin: 2px 0 4px;
+}
+
+/*
+  Chips de opcion, como los de la tienda de la marca: rectangulos finitos con
+  borde, y el elegido se marca oscureciendo el borde, sin relleno.
+*/
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.chip {
+  padding: 4px 9px;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-chico);
+  background: var(--superficie);
+  color: var(--tinta-2);
+  font-size: 11.5px;
+  line-height: 1.35;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 140ms var(--curva),
+    color 140ms var(--curva);
+}
+
+.chip:hover {
+  border-color: var(--borde-fuerte);
+  color: var(--tinta);
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--tinta);
+  color: var(--tinta);
 }
 
 .guardados {
@@ -567,66 +618,153 @@ a {
 
 @media (min-width: 980px) {
   .panel {
+    display: flex;
+    flex-direction: column;
     height: calc(100dvh - var(--alto-barra));
+  }
+
+  /* Solo scrollea el cuerpo: los pasos y la navegacion quedan siempre a la vista. */
+  .panel__cuerpo {
+    flex: 1;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
 }
 
-.panel__pestanias {
+.panel__pasos {
   position: sticky;
   top: 0;
   z-index: 4;
-  display: flex;
-  gap: 2px;
-  padding: 10px 14px 0;
-  background: color-mix(in srgb, var(--papel) 92%, transparent);
+  padding: 12px 14px 10px;
+  background: color-mix(in srgb, var(--papel) 94%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--borde);
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
-.panel__pestanias::-webkit-scrollbar {
-  display: none;
+.pasos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.pestania {
-  flex: none;
-  padding: 9px 13px 11px;
+.pasos > li {
+  flex: 0 0 auto;
+}
+
+.pasos__paso {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 8px;
   border: 0;
+  border-radius: var(--r);
   background: none;
   color: var(--tinta-3);
-  font-size: 13.5px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 400;
+  text-align: left;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  white-space: nowrap;
   transition:
-    color 140ms var(--curva),
-    border-color 140ms var(--curva);
+    background 140ms var(--curva),
+    color 140ms var(--curva);
 }
 
-.pestania:hover {
+.pasos__paso:hover {
+  background: var(--superficie-2);
   color: var(--tinta);
 }
 
-.pestania[aria-selected='true'] {
-  color: var(--acento);
-  border-bottom-color: var(--acento);
+.pasos__numero {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--borde-fuerte);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/*
+  Con una paleta monocromatica el paso actual no puede distinguirse solo por el
+  color: lleva ademas el numero en negativo y el titulo en semibold.
+*/
+.pasos__paso[data-estado='actual'] {
+  color: var(--tinta);
+  font-weight: 500;
+  background: var(--acento-suave);
+}
+
+.pasos__paso[data-estado='actual'] .pasos__numero {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: var(--sobre-acento);
+}
+
+.pasos__paso[data-estado='hecho'] {
+  color: var(--tinta-2);
+}
+
+.pasos__paso[data-estado='hecho'] .pasos__numero {
+  border-color: var(--tinta-2);
+  color: var(--tinta-2);
+}
+
+.pasos__titulo {
+  white-space: nowrap;
+}
+
+.panel__bajada {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 10px;
+  padding: 0 2px;
+  font-size: 12.5px;
+  color: var(--tinta-3);
+}
+
+.panel__cuenta {
+  color: var(--tinta-2);
+  font-weight: 500;
+}
+
+/* Navegacion entre pasos, siempre al alcance al pie del panel. */
+.panel__navegacion {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--papel) 94%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--borde);
+}
+
+.panel__navegacion .boton {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .panel__cuerpo {
-  padding: 20px 18px 64px;
+  padding: 18px 18px 24px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 26px;
+  gap: 20px;
 }
 
 .grupo {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 9px;
 }
 
 .grupo__titulo {
@@ -664,7 +802,7 @@ a {
 .campo {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 7px;
+  gap: 6px;
 }
 
 .campo__etiqueta {
@@ -759,8 +897,8 @@ a {
   border: 0;
   background: none;
   text-align: right;
-  font-family: var(--mono);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
   font-size: 14px;
   padding: 0;
 }
@@ -1015,8 +1153,8 @@ a {
 }
 
 .dato__valor {
-  font-family: var(--mono);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
   font-size: 13px;
   text-align: right;
 }
@@ -1059,7 +1197,7 @@ a {
 }
 
 .bloque-cajon__medida {
-  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
   color: var(--tinta-2);
 }
 
@@ -1159,7 +1297,7 @@ a {
 }
 
 .referencia {
-  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
   font-size: 14px;
   padding: 3px 7px;
   border-radius: var(--r-chico);
@@ -1272,14 +1410,13 @@ a {
 }
 
 .tabla-piezas__num {
-  font-family: var(--mono);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
   font-size: 12.5px;
   text-align: right;
 }
 
 .tabla-piezas__encabezado .tabla-piezas__num {
-  font-family: var(--sans);
   font-size: 11px;
 }
 
@@ -1302,4 +1439,145 @@ a {
 .escena__dato--pieza .num {
   color: var(--tinta-2);
   font-weight: 400;
+}
+
+/* ---------- Repaso de lo elegido ---------- */
+
+.repaso__mueble {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  margin-bottom: 2px;
+}
+
+.repaso {
+  border: 1px solid var(--borde);
+  border-radius: var(--r);
+  background: var(--superficie);
+  overflow: hidden;
+}
+
+.repaso__fila {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 9px 12px;
+  font-size: 13.5px;
+}
+
+.repaso__fila + .repaso__fila {
+  border-top: 1px solid var(--borde);
+}
+
+.repaso__clave {
+  color: var(--tinta-3);
+  font-size: 12.5px;
+}
+
+.repaso__valor {
+  min-width: 0;
+}
+
+.repaso__cambiar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: var(--r-chico);
+  background: none;
+  color: var(--tinta-2);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.repaso__cambiar:hover {
+  color: var(--tinta);
+  background: var(--superficie-2);
+}
+
+/* ---------- Plegable ---------- */
+
+.plegable {
+  border: 1px solid var(--borde);
+  border-radius: var(--r);
+  background: var(--superficie);
+}
+
+.plegable__titulo {
+  padding: 12px 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+
+.plegable__titulo::-webkit-details-marker {
+  display: none;
+}
+
+.plegable__titulo::before {
+  content: '+';
+  display: inline-block;
+  width: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta-3);
+}
+
+.plegable[open] > .plegable__titulo::before {
+  content: '-';
+}
+
+.plegable[open] > .plegable__titulo {
+  border-bottom: 1px solid var(--borde);
+}
+
+.plegable__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  padding: 16px 14px;
+}
+
+.plegable__cuerpo > * {
+  min-width: 0;
+}
+
+/* Etiqueta de cota sobre el visor 3D. */
+.cota {
+  display: block;
+  padding: 2px 7px;
+  border-radius: var(--r-chico);
+  background: color-mix(in srgb, var(--superficie) 92%, transparent);
+  border: 1px solid var(--borde);
+  color: var(--tinta-2);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  line-height: 1.3;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Cartel con la medida de la pieza, colgado sobre ella en el visor. */
+.globo {
+  display: block;
+  padding: 4px 9px;
+  border-radius: var(--r);
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  line-height: 1.35;
+  white-space: nowrap;
+  box-shadow: var(--sombra);
+  user-select: none;
+  pointer-events: none;
 }

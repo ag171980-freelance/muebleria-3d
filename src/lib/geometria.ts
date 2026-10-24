@@ -1,5 +1,6 @@
 import { modeloDe } from '../data/modelos'
 import { HERRAJE_POR_ID, type TipoHerraje } from '../data/herrajes'
+import { CANIO } from '../data/marca'
 import {
   ESPESOR_FONDO,
   LUZ_FRENTE,
@@ -22,13 +23,20 @@ export type Caja = {
   medida: V3
   grano: Eje
   mat: Material
-  /**
-   * Cuanto se aparta la pieza del mueble en la vista de despiece, en mm.
-   * Cada pieza sale por el eje de su propio espesor, que es como se arma y se
-   * desarma en la realidad.
-   */
-  desarme: V3
+  /** Donde queda la pieza cuando el mueble se desarma. Lo calcula acostarEnElPiso(). */
+  tendido?: Tendido
 }
+
+/**
+ * Posicion y giro de una pieza acostada en el piso.
+ *
+ * El despiece no explota en el aire: las piezas se acuestan sobre el piso, de
+ * canto para abajo, como quedan en el taller cuando se corta la placa. Asi se
+ * cuentan y se miden de verdad.
+ */
+export type Tendido = { pos: V3; rot: V3 }
+
+export const TENDIDO_CERO: Tendido = { pos: [0, 0, 0], rot: [0, 0, 0] }
 
 export type HerrajeColocado = {
   id: string
@@ -42,15 +50,13 @@ export type CajonArmado = {
   id: string
   /** Centro del frente cerrado, en coordenadas globales. */
   ancla: V3
-  frente: { medida: V3; grano: Eje }
+  frente: { medida: V3; grano: Eje; tendido?: Tendido }
   /** Piezas del cajon, relativas al ancla. */
   interior: Caja[]
   /** Herrajes relativos al ancla. */
   herrajes: HerrajeColocado[]
   tipoHerraje: TipoHerraje
   recorrido: number
-  /** Desplazamiento del cajon entero en la vista de despiece. */
-  desarme: V3
   utiles: { ancho: number; alto: number; profundidad: number }
 }
 
@@ -61,13 +67,11 @@ export type PuertaArmada = {
   bisagra: V3
   /** Batiente: 1 abre hacia +X, -1 hacia -X. Sin uso en corredizas. */
   sentido: 1 | -1
-  hoja: { medida: V3; grano: Eje; centro: V3 }
+  hoja: { medida: V3; grano: Eje; centro: V3; tendido?: Tendido }
   herrajes: HerrajeColocado[]
   tipoHerraje: TipoHerraje
   /** Corrediza: cuanto corre sobre X al abrirse, en mm. */
   corrimiento: number
-  /** Desplazamiento de la hoja en la vista de despiece, derecha y sin correr. */
-  desarme: V3
 }
 
 export type Pata = {
@@ -75,19 +79,57 @@ export type Pata = {
   nombre: string
   pos: V3
   altura: number
+  /** Lado del caño cuando es cuadrado. Sirve de medida y para el cubicaje. */
   seccion: number
-  forma: 'tubo' | 'torneada'
+  /** Medida real del caño cuando no es cuadrado, por ejemplo el 30x60. */
+  medida?: V3
+  forma: 'tubo' | 'rueda'
   mat: Material
-  desarme: V3
+  tendido?: Tendido
 }
 
-export type Barral = { id: string; pos: V3; largo: number; radio: number; desarme: V3 }
+/** Medida con la que se dibuja y se cubica una pata. */
+export function medidaDePata(pata: Pata): V3 {
+  return pata.medida ?? [pata.seccion, pata.altura, pata.seccion]
+}
+
+export type Barral = { id: string; pos: V3; largo: number; radio: number; tendido?: Tendido }
+
+/**
+ * Un conjunto soldado: varios caños que forman una sola pieza.
+ *
+ * El marco de un escritorio llega del herrero soldado y entero. Mostrarlo
+ * partido en cuatro barras en el despiece, o contarlo como cuatro renglones en
+ * la lista de corte, es describir algo que no existe: nadie corta ni pide esas
+ * cuatro barras por separado.
+ */
+export type Conjunto = {
+  id: string
+  nombre: string
+  /** Centro del conjunto, en coordenadas globales. */
+  pos: V3
+  /** Envolvente del conjunto armado. Es la medida con la que se pide. */
+  medida: V3
+  /** Los caños soldados, con su posicion relativa al centro del conjunto. */
+  piezas: Caja[]
+  mat: Material
+  tendido?: Tendido
+}
+
+/** Envolvente de un grupo de piezas acomodadas alrededor de un centro. */
+function envolvente(piezas: Caja[]): V3 {
+  const limite = (eje: 0 | 1 | 2) =>
+    Math.max(...piezas.map((pz) => Math.abs(pz.pos[eje]) + pz.medida[eje] / 2)) * 2
+  return [limite(0), limite(1), limite(2)]
+}
 
 /** Caja envolvente del mueble, en mm. `centroY` es la altura de su centro. */
 export type Bulto = { ancho: number; alto: number; profundidad: number; centroY: number }
 
 export type Despiece = {
   paneles: Caja[]
+  /** Conjuntos soldados, que cuentan como una pieza sola. */
+  conjuntos: Conjunto[]
   cajones: CajonArmado[]
   puertas: PuertaArmada[]
   patas: Pata[]
@@ -113,17 +155,6 @@ const LUZ_CARRIL = 4
 /** Alto del perfil del riel, arriba y abajo. */
 const ALTO_RIEL = 16
 
-/**
- * Separacion base del despiece. Se mide contra el lado mas largo del mueble
- * para que la vista explotada sea igual de legible en una mesa de luz que en
- * un placard de dos metros y medio.
- */
-function pasoDesarme(c: Configuracion): number {
-  return Math.max(c.ancho, c.alto, c.profundidad) * 0.36
-}
-
-/** Cuanto se adelantan los frentes y las puertas: por delante de todo lo demas. */
-const AVANCE_FRENTES = 3.4
 
 /** Lo que sobresale el conjunto de hojas corredizas por delante de la caja. */
 function vueloCorredizas(c: Configuracion, cantidad: number): number {
@@ -193,11 +224,10 @@ function armarCajon(opts: {
   profundidadUtil: number
   /** Plano exterior del frente, en Z global. */
   zCara: number
-  paso: number
   /** False si tiene una hoja cerrada por delante y no puede salir. */
   puedeAbrir: boolean
 }): CajonArmado {
-  const { id, c, cx, anchoFrente, anchoHueco, yBase, altoHueco, profundidadUtil, zCara, paso, puedeAbrir } = opts
+  const { id, c, cx, anchoFrente, anchoHueco, yBase, altoHueco, profundidadUtil, zCara, puedeAbrir } = opts
   const t = c.espesor
   const altoFrente = Math.max(40, altoHueco - LUZ_FRENTE)
   const cy = yBase + altoHueco / 2
@@ -216,7 +246,6 @@ function armarCajon(opts: {
       medida: [PARED_CAJON, altoCaja, profCaja],
       grano: 'z',
       mat: 'placa',
-      desarme: [-0.55 * paso, 0, 0],
     },
     {
       id: id + '-der',
@@ -225,7 +254,6 @@ function armarCajon(opts: {
       medida: [PARED_CAJON, altoCaja, profCaja],
       grano: 'z',
       mat: 'placa',
-      desarme: [0.55 * paso, 0, 0],
     },
     {
       id: id + '-contrafrente',
@@ -234,7 +262,6 @@ function armarCajon(opts: {
       medida: [anchoCaja - 2 * PARED_CAJON, altoCaja, PARED_CAJON],
       grano: 'x',
       mat: 'placa',
-      desarme: [0, 0, -0.5 * paso],
     },
     {
       id: id + '-piso',
@@ -243,7 +270,6 @@ function armarCajon(opts: {
       medida: [anchoCaja - 2 * PARED_CAJON, ESPESOR_FONDO, profCaja - PARED_CAJON],
       grano: 'x',
       mat: 'fondo',
-      desarme: [0, -0.65 * paso, 0],
     },
   ]
 
@@ -261,7 +287,6 @@ function armarCajon(opts: {
     }),
     tipoHerraje: c.herrajeId,
     recorrido: puedeAbrir ? Math.round(profCaja * 0.78) : 0,
-    desarme: [0, 0, AVANCE_FRENTES * paso],
     utiles: {
       ancho: Math.round(anchoCaja - 2 * PARED_CAJON),
       alto: Math.round(altoCaja - ESPESOR_FONDO),
@@ -288,7 +313,6 @@ function armarGrillaCajones(opts: {
   profundidadUtil: number
   /** Plano exterior de los frentes, Z global. */
   zCara: number
-  paso: number
   /** True cuando los frentes van dentro de la caja, detras de las puertas. */
   adentro: boolean
   /**
@@ -297,7 +321,7 @@ function armarGrillaCajones(opts: {
    */
   zonaAbierta?: [number, number]
 }): { cajones: CajonArmado[]; paneles: Caja[]; columnas: number } {
-  const { c, alturas, xDesde, anchoZona, yBase, profundidadUtil, zCara, paso, adentro, zonaAbierta } = opts
+  const { c, alturas, xDesde, anchoZona, yBase, profundidadUtil, zCara, adentro, zonaAbierta } = opts
   if (alturas.length === 0 || anchoZona <= 0) return { cajones: [], paneles: [], columnas: 0 }
 
   const t = c.espesor
@@ -325,7 +349,6 @@ function armarGrillaCajones(opts: {
       grano: 'y',
       mat: 'placa',
       // Mas afuera que el parante central, para que no se monten en el despiece.
-      desarme: [(4.2 + j * 1.2) * paso - x, 0, 0],
     })
   }
 
@@ -349,7 +372,6 @@ function armarGrillaCajones(opts: {
           altoHueco,
           profundidadUtil,
           zCara,
-          paso,
           puedeAbrir,
         }),
       )
@@ -366,9 +388,8 @@ function armarPuertasBatientes(opts: {
   anchoZona: number
   yBase: number
   altoZona: number
-  paso: number
 }): PuertaArmada[] {
-  const { c, cantidad, xDesde, anchoZona, yBase, altoZona, paso } = opts
+  const { c, cantidad, xDesde, anchoZona, yBase, altoZona } = opts
   if (cantidad <= 0) return []
   const t = c.espesor
   const altoHoja = Math.max(60, altoZona - LUZ_FRENTE)
@@ -400,7 +421,6 @@ function armarPuertasBatientes(opts: {
       }).map((h) => ({ ...h, pos: [h.pos[0] + offsetX, h.pos[1], h.pos[2]] as V3 })),
       tipoHerraje: c.herrajeId,
       corrimiento: 0,
-      desarme: [0, 0, AVANCE_FRENTES * paso] as V3,
     }
   })
 }
@@ -419,9 +439,8 @@ function armarPuertasCorredizas(opts: {
   anchoZona: number
   yBase: number
   altoZona: number
-  paso: number
 }): { puertas: PuertaArmada[]; rieles: Caja[] } {
-  const { c, cantidad, xDesde, anchoZona, yBase, altoZona, paso } = opts
+  const { c, cantidad, xDesde, anchoZona, yBase, altoZona } = opts
   if (cantidad <= 0) return { puertas: [], rieles: [] }
   const t = c.espesor
   const anchoHoja = Math.max(120, (anchoZona + (cantidad - 1) * SOLAPE_CORREDIZA) / cantidad)
@@ -453,7 +472,6 @@ function armarPuertasCorredizas(opts: {
       // Siempre al ras, sin importar que herraje se eligio para los cajones.
       tipoHerraje: 'perfil-j',
       corrimiento: (cantidad - 1 - i) * salto,
-      desarme: [0, 0, (AVANCE_FRENTES + i * 0.45) * paso] as V3,
     }
   })
 
@@ -467,7 +485,6 @@ function armarPuertasCorredizas(opts: {
       medida: [anchoZona, ALTO_RIEL, vuelo],
       grano: 'x',
       mat: 'metal',
-      desarme: [0, 0.9 * paso, AVANCE_FRENTES * paso],
     },
     {
       id: 'riel-inferior',
@@ -476,39 +493,21 @@ function armarPuertasCorredizas(opts: {
       medida: [anchoZona, ALTO_RIEL, vuelo],
       grano: 'x',
       mat: 'metal',
-      desarme: [0, -0.9 * paso, AVANCE_FRENTES * paso],
     },
   ]
 
   return { puertas, rieles }
 }
 
-function armarBase(c: Configuracion, paso: number): { patas: Pata[]; paneles: Caja[] } {
+function armarBase(c: Configuracion): { patas: Pata[]; paneles: Caja[] } {
   const hb = alturaBaseReal(c)
   if (hb <= 0) return { patas: [], paneles: [] }
   const { ancho: W, profundidad: D } = c
 
-  if (c.baseId === 'zocalo') {
-    return {
-      patas: [],
-      paneles: [
-        {
-          id: 'zocalo',
-          nombre: 'Zocalo',
-          // Retirado del frente para que no se golpee con la punta del pie.
-          pos: [0, hb / 2, -15],
-          medida: [Math.max(200, W - 120), hb, Math.max(150, D - 60)],
-          grano: 'x',
-          mat: 'placa',
-          desarme: [0, -1.9 * paso, 0],
-        },
-      ],
-    }
-  }
-
-  const tubo = c.baseId === 'patas-metal'
-  const seccion = tubo ? 38 : 62
-  const retiro = tubo ? 55 : 70
+  const ruedas = c.baseId === 'ruedas'
+  // Caño 25x25, que es el que la marca usa en rack y mesas de luz.
+  const seccion = ruedas ? 48 : CANIO.rack[0]
+  const retiro = ruedas ? 60 : 45
   const esquinas: V3[] = [
     [-(W / 2 - retiro), hb / 2, -(D / 2 - retiro)],
     [W / 2 - retiro, hb / 2, -(D / 2 - retiro)],
@@ -518,19 +517,18 @@ function armarBase(c: Configuracion, paso: number): { patas: Pata[]; paneles: Ca
   return {
     patas: esquinas.map((pos, i) => ({
       id: 'pata-' + i,
-      nombre: tubo ? 'Pata de hierro' : 'Pata de madera',
+      nombre: ruedas ? 'Rueda giratoria' : 'Pata de hierro',
       pos,
       altura: hb,
       seccion,
-      forma: tubo ? 'tubo' : 'torneada',
-      mat: tubo ? 'metal' : 'placa',
-      desarme: [Math.sign(pos[0]) * 0.7 * paso, -1.1 * paso, Math.sign(pos[2]) * 0.7 * paso] as V3,
+      forma: ruedas ? 'rueda' : 'tubo',
+      mat: 'metal',
     })),
     paneles: [],
   }
 }
 
-function armarCarcasa(c: Configuracion, paso: number): Caja[] {
+function armarCarcasa(c: Configuracion): Caja[] {
   const t = c.espesor
   const { ancho: W, profundidad: D } = c
   const hb = alturaBaseReal(c)
@@ -544,7 +542,6 @@ function armarCarcasa(c: Configuracion, paso: number): Caja[] {
       medida: [t, hc, D],
       grano: 'y',
       mat: 'placa',
-      desarme: [-paso, 0, 0],
     },
     {
       id: 'lat-der',
@@ -553,7 +550,6 @@ function armarCarcasa(c: Configuracion, paso: number): Caja[] {
       medida: [t, hc, D],
       grano: 'y',
       mat: 'placa',
-      desarme: [paso, 0, 0],
     },
     {
       id: 'techo',
@@ -562,7 +558,6 @@ function armarCarcasa(c: Configuracion, paso: number): Caja[] {
       medida: [Wi, t, D],
       grano: 'x',
       mat: 'placa',
-      desarme: [0, paso, 0],
     },
     {
       id: 'piso',
@@ -571,7 +566,6 @@ function armarCarcasa(c: Configuracion, paso: number): Caja[] {
       medida: [Wi, t, D],
       grano: 'x',
       mat: 'placa',
-      desarme: [0, -paso, 0],
     },
   ]
   if (c.conFondo) {
@@ -582,7 +576,6 @@ function armarCarcasa(c: Configuracion, paso: number): Caja[] {
       medida: [Wi, hc - 2 * t, ESPESOR_FONDO],
       grano: 'x',
       mat: 'fondo',
-      desarme: [0, 0, -1.45 * paso],
     })
   }
   return piezas
@@ -596,9 +589,8 @@ function repartirEstantes(opts: {
   yDesde: number
   yHasta: number
   prefijo: string
-  paso: number
 }): Caja[] {
-  const { c, cantidad, xCentro, ancho, yDesde, yHasta, prefijo, paso } = opts
+  const { c, cantidad, xCentro, ancho, yDesde, yHasta, prefijo } = opts
   if (cantidad <= 0 || ancho <= 0) return []
   const t = c.espesor
   const prof = (c.conFondo ? c.profundidad - ESPESOR_FONDO : c.profundidad) - 12
@@ -611,7 +603,6 @@ function repartirEstantes(opts: {
     grano: 'x' as Eje,
     mat: 'placa' as Material,
     // Salen de a uno hacia adelante, en escalera, para que se cuenten de un vistazo.
-    desarme: [0, 0, paso * (1.1 + i * 0.55)] as V3,
   }))
 }
 
@@ -625,8 +616,8 @@ function avisosDe(c: Configuracion, luzEstante: number, columnas: number): strin
       'Con mas de 90 cm de luz libre el estante se flecha con peso. Conviene un parante central o placa de 25 mm.',
     )
   }
-  if (c.espesor === 18 && c.ancho > 2000 && modelo.distribucion !== 'mesa') {
-    avisos.push('Arriba de 2 m de ancho recomendamos placa de 25 mm en laterales y techo.')
+  if (c.espesor === 20 && c.ancho > 1800 && modelo.distribucion !== 'estanteria-hierro') {
+    avisos.push('Arriba de 1,80 m de ancho la madera de 20 mm se arquea. A esta medida la hacemos en 30 mm.')
   }
   if (modelo.distribucion === 'placar' && c.profundidad < 500) {
     avisos.push('Para colgar en percha hacen falta 50 cm de profundidad. Con menos, el barral va perpendicular al frente.')
@@ -634,11 +625,20 @@ function avisosDe(c: Configuracion, luzEstante: number, columnas: number): strin
   if (modelo.distribucion === 'estantes' && !c.conFondo && c.alto > 1800) {
     avisos.push('Sin fondo y a esta altura el mueble hay que amurarlo a la pared. Los tarugos van incluidos.')
   }
-  if (c.baseId === 'patas-metal' && c.ancho > 2000) {
-    avisos.push('A este ancho sumamos un quinto apoyo central para que el piso no se hunda.')
+  if (c.baseId === 'patas-hierro' && c.ancho > 1800) {
+    avisos.push('A este ancho le sumamos una pata central de caño para que el piso no se hunda.')
   }
-  if (modelo.distribucion === 'mesa' && c.espesor < 25) {
-    avisos.push('Una tapa de mesa en 18 mm se arquea. La hacemos en 25 mm o con refuerzo por debajo.')
+  if (modelo.distribucion === 'escritorio' && c.ancho > 1800 && c.espesor < 30) {
+    avisos.push('Una tapa de mas de 1,80 m va si o si en madera maciza de 30 mm.')
+  }
+  if (modelo.distribucion === 'escritorio' && c.alto > 790) {
+    avisos.push('Arriba de 79 cm de alto conviene una silla regulable o un apoyapies: es altura de escritorio alto.')
+  }
+  if (modelo.distribucion === 'estanteria-hierro' && c.alto > 1600) {
+    avisos.push('A esta altura la estanteria se amura a la pared con dos fijaciones arriba. Van incluidas.')
+  }
+  if (c.baseId === 'ruedas' && c.ancho > 500) {
+    avisos.push('Con ruedas y mas de 50 cm de ancho el mueble se vuelca al abrir el cajon de arriba lleno.')
   }
   if (columnas > 0 && columnas < Math.round(c.columnasCajones)) {
     avisos.push(
@@ -662,61 +662,419 @@ function avisosDe(c: Configuracion, luzEstante: number, columnas: number): strin
   return avisos
 }
 
-/** Acumulador de caja envolvente en milimetros. */
-type Limites = { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number }
+/** Retiro del marco respecto del borde de la tapa. */
+const RETIRO_PATA = 70
 
-function limitesVacios(): Limites {
+/**
+ * Escritorio y mesa: tapa de madera maciza sobre bastidor de hierro.
+ *
+ * La pata no son cuatro postes sueltos. En todas las fotos de la marca es un
+ * marco rectangular de caño chato por cada extremo, con la cara ancha de
+ * costado y el travesaño de abajo apoyado en el piso. Los dos marcos se unen
+ * con un travesaño largo atras. Adelante no lleva nada: ahi van las rodillas.
+ */
+function armarEscritorio(
+  c: Configuracion,
+  enL: boolean,
+): {
+  paneles: Caja[]
+  conjuntos: Conjunto[]
+  cajones: CajonArmado[]
+  puertas: PuertaArmada[]
+  patas: Pata[]
+  barrales: Barral[]
+  rieles: Caja[]
+  bulto: Bulto
+} {
+  const t = c.espesor
+  const { ancho: W, profundidad: D } = c
+  const altoPata = c.alto - t
+  const [caraAncha, caraAngosta] = CANIO.escritorio
+  // El caño va de canto: se ve angosto de frente y macizo de perfil.
+  const grosor = caraAngosta
+  const canto = caraAncha
+  const estilo = c.tipoPataId
+  const cerrado = estilo === 'marco'
+  const esMarco = estilo === 'marco' || estilo === 'marco-u'
+
+  // En el escritorio en L la huella en planta es cuadrada: el ala principal va
+  // adelante y el retorno ocupa el fondo contra un costado.
+  const fondoTotal = enL ? Math.max(D, W) : D
+  const zPrincipal = enL ? fondoTotal / 2 - D / 2 : 0
+
+  const paneles: Caja[] = [
+    {
+      id: 'tapa',
+      nombre: 'Tapa',
+      pos: [0, c.alto - t / 2, zPrincipal],
+      medida: [W, t, D],
+      grano: 'x',
+      mat: 'placa',
+    },
+  ]
+  const patas: Pata[] = []
+  const conjuntos: Conjunto[] = []
+
+  /**
+   * Un marco por extremo. `eje` dice sobre que direccion corren los travesaños
+   * del marco: 'z' en los laterales del ala principal, 'x' en el retorno.
+   */
+  /**
+   * Un marco por extremo.
+   *
+   * El marco cerrado y el marco en U llegan del herrero **soldados y enteros**,
+   * asi que salen como un conjunto: una sola pieza en la lista de corte y un
+   * solo bulto cuando el mueble se desarma. La pata recta si son cuatro caños
+   * sueltos, y en ese caso van como patas independientes.
+   *
+   * `eje` dice sobre que direccion corren los travesaños: 'z' en los laterales
+   * del ala principal, 'x' en el retorno del escritorio en L.
+   */
+  const armarMarco = (clave: string, cx: number, cz: number, largo: number, eje: 'x' | 'z') => {
+    const mitad = largo / 2 - RETIRO_PATA
+    const medidaPoste: V3 = eje === 'z' ? [grosor, altoPata, canto] : [canto, altoPata, grosor]
+
+    if (!esMarco) {
+      for (const [i, signo] of [-1, 1].entries()) {
+        patas.push({
+          id: clave + '-poste-' + i,
+          nombre: 'Pata de hierro',
+          pos: eje === 'z' ? [cx, altoPata / 2, cz + signo * mitad] : [cx + signo * mitad, altoPata / 2, cz],
+          altura: altoPata,
+          // `seccion` solo sirve de referencia; la medida real va en `medida`.
+          seccion: grosor,
+          forma: 'tubo',
+          mat: 'metal',
+          medida: medidaPoste,
+        })
+      }
+      return
+    }
+
+    // Las piezas del marco van relativas a su centro, para que el conjunto se
+    // pueda mover y girar entero.
+    const piezas: Caja[] = []
+    for (const [i, signo] of [-1, 1].entries()) {
+      piezas.push({
+        id: clave + '-poste-' + i,
+        nombre: 'Poste',
+        pos: eje === 'z' ? [0, 0, signo * mitad] : [signo * mitad, 0, 0],
+        medida: medidaPoste,
+        grano: 'y',
+        mat: 'metal',
+      })
+    }
+
+    // Travesaño de arriba, pegado bajo la tapa, y el del piso si el marco cierra.
+    const alturas: [string, number][] = cerrado
+      ? [
+          ['sup', altoPata / 2 - canto / 2],
+          ['piso', -(altoPata / 2) + canto / 2],
+        ]
+      : [['sup', altoPata / 2 - canto / 2]]
+
+    const largoTravesanio = largo - 2 * RETIRO_PATA + grosor
+    for (const [nombre, y] of alturas) {
+      piezas.push({
+        id: clave + '-' + nombre,
+        nombre: nombre === 'piso' ? 'Travesaño de piso' : 'Travesaño de marco',
+        pos: [0, y, 0],
+        medida: eje === 'z' ? [grosor, canto, largoTravesanio] : [largoTravesanio, canto, grosor],
+        grano: eje,
+        mat: 'metal',
+      })
+    }
+
+    conjuntos.push({
+      id: clave,
+      nombre: cerrado ? 'Marco de hierro' : 'Marco de hierro en U',
+      pos: [cx, altoPata / 2, cz],
+      medida: envolvente(piezas),
+      piezas,
+      mat: 'metal',
+    })
+  }
+
+  const xIzq = -(W / 2 - RETIRO_PATA)
+  const xDer = W / 2 - RETIRO_PATA
+  armarMarco('marco-izq', xIzq, zPrincipal, D, 'z')
+  armarMarco('marco-der', xDer, zPrincipal, D, 'z')
+
+  // Travesaño largo de atras: es el que une los dos marcos y cuadra el mueble.
+  const zFondo = zPrincipal - D / 2 + RETIRO_PATA
+  paneles.push({
+    id: 'bastidor-largo',
+    nombre: 'Travesaño largo',
+    pos: [0, Math.max(160, altoPata * 0.28), zFondo],
+    medida: [W - 2 * RETIRO_PATA, grosor, grosor],
+    grano: 'x',
+    mat: 'metal',
+  })
+
+  if (enL) {
+    // Ala perpendicular contra el costado derecho, hacia el fondo.
+    const largoRetorno = Math.max(200, fondoTotal - D)
+    const zRetorno = zPrincipal - D / 2 - largoRetorno / 2
+    const xRetorno = W / 2 - D / 2
+    paneles.push({
+      id: 'tapa-retorno',
+      nombre: 'Tapa de retorno',
+      pos: [xRetorno, c.alto - t / 2, zRetorno],
+      medida: [D, t, largoRetorno],
+      grano: 'z',
+      mat: 'placa',
+    })
+    // El retorno apoya en un marco propio, en la punta libre.
+    armarMarco('marco-ret', xRetorno, zRetorno - largoRetorno / 2 + RETIRO_PATA, D, 'x')
+  }
+
+  if (c.conEstanteCpu) {
+    // La bandeja apoya dentro del marco izquierdo, sobre el travesaño de abajo,
+    // y se mete hacia adentro del escritorio. Es como la llevan en sus fotos:
+    // abajo y adentro del marco, no colgada bajo la tapa.
+    const espesorBandeja = 20
+    const anchoBandeja = 340
+    const yBandeja = (cerrado ? canto : 0) + Math.max(140, altoPata * 0.22) + espesorBandeja / 2
+    paneles.push({
+      id: 'estante-cpu',
+      nombre: 'Bandeja para CPU',
+      pos: [xIzq + anchoBandeja / 2, yBandeja, zPrincipal],
+      medida: [anchoBandeja, espesorBandeja, Math.max(220, D - 2 * RETIRO_PATA)],
+      grano: 'x',
+      mat: 'placa',
+    })
+    paneles.push({
+      id: 'soporte-cpu',
+      nombre: 'Soporte de bandeja',
+      pos: [xIzq + anchoBandeja - grosor / 2, yBandeja - espesorBandeja / 2 - canto / 2, zPrincipal],
+      medida: [grosor, canto, Math.max(220, D - 2 * RETIRO_PATA)],
+      grano: 'z',
+      mat: 'metal',
+    })
+  }
+
+  const bulto: Bulto = { ancho: W, alto: c.alto, profundidad: fondoTotal, centroY: c.alto / 2 }
+  return { paneles, conjuntos, cajones: [], puertas: [], patas, barrales: [], rieles: [], bulto }
+}
+
+/**
+ * Estanteria: parantes de hierro 20x20 y estantes de madera maciza pasantes.
+ *
+ * No hay cuerpo cerrado. Los estantes apoyan sobre travesaños soldados a los
+ * parantes, que es como se arma una estanteria de hierro: el estante entra
+ * entre los dos bastidores laterales y queda a la vista por los cuatro cantos.
+ */
+function armarEstanteriaHierro(
+  c: Configuracion,
+): {
+  paneles: Caja[]
+  conjuntos: Conjunto[]
+  cajones: CajonArmado[]
+  puertas: PuertaArmada[]
+  patas: Pata[]
+  barrales: Barral[]
+  rieles: Caja[]
+  bulto: Bulto
+  luzEstante: number
+} {
+  const t = c.espesor
+  const { ancho: W, profundidad: D, alto: H } = c
+  const [seccion] = CANIO.estanteria
+  const cantidad = Math.max(1, c.cantidadEstantes)
+  const anchoEstante = Math.max(120, W - 2 * seccion)
+
+  const paneles: Caja[] = []
+  const patas: Pata[] = []
+
+  // Cuatro parantes, con la cara externa al ras del ancho y del fondo.
+  const esquinas: [number, number][] = [
+    [-(W / 2 - seccion / 2), -(D / 2 - seccion / 2)],
+    [W / 2 - seccion / 2, -(D / 2 - seccion / 2)],
+    [-(W / 2 - seccion / 2), D / 2 - seccion / 2],
+    [W / 2 - seccion / 2, D / 2 - seccion / 2],
+  ]
+  esquinas.forEach(([x, z], i) => {
+    patas.push({
+      id: 'parante-' + i,
+      nombre: 'Parante de hierro',
+      pos: [x, H / 2, z],
+      altura: H,
+      seccion,
+      forma: 'tubo',
+      mat: 'metal',
+    })
+  })
+
+  // El estante de mas abajo deja el pie libre y el de arriba cierra el mueble.
+  const yPrimero = Math.min(120, H * 0.08)
+  const yUltimo = H - t / 2
+  const salto = cantidad > 1 ? (yUltimo - yPrimero) / (cantidad - 1) : 0
+
+  for (let i = 0; i < cantidad; i++) {
+    const y = cantidad > 1 ? yPrimero + i * salto : H / 2
+    paneles.push({
+      id: 'estante-' + i,
+      nombre: 'Estante',
+      pos: [0, y, 0],
+      medida: [anchoEstante, t, D],
+      grano: 'x',
+      mat: 'placa',
+    })
+    // Travesaños que sostienen el estante, uno de cada lado.
+    for (const [j, signo] of [-1, 1].entries()) {
+      paneles.push({
+        id: 'soporte-' + i + '-' + j,
+        nombre: 'Travesaño de estante',
+        pos: [signo * (W / 2 - seccion / 2), y - t / 2 - seccion / 2, 0],
+        medida: [seccion, seccion, D - 2 * seccion],
+        grano: 'z',
+        mat: 'metal',
+      })
+    }
+  }
+
+  // Travesaños de fondo arriba y abajo: son los que la cuadran.
+  for (const [i, y] of [yPrimero - t / 2 - seccion / 2, H - seccion / 2].entries()) {
+    paneles.push({
+      id: 'cruz-fondo-' + i,
+      nombre: 'Travesaño de fondo',
+      pos: [0, y, -(D / 2 - seccion / 2)],
+      medida: [W - 2 * seccion, seccion, seccion],
+      grano: 'x',
+      mat: 'metal',
+    })
+  }
+
+  const bulto: Bulto = { ancho: W, alto: H, profundidad: D, centroY: H / 2 }
   return {
-    minX: Infinity,
-    maxX: -Infinity,
-    minY: Infinity,
-    maxY: -Infinity,
-    minZ: Infinity,
-    maxZ: -Infinity,
+    paneles,
+    conjuntos: [],
+    cajones: [],
+    puertas: [],
+    patas,
+    barrales: [],
+    rieles: [],
+    bulto,
+    luzEstante: anchoEstante,
   }
 }
 
-function sumarLimites(l: Limites, centro: V3, medida: V3): void {
-  l.minX = Math.min(l.minX, centro[0] - medida[0] / 2)
-  l.maxX = Math.max(l.maxX, centro[0] + medida[0] / 2)
-  l.minY = Math.min(l.minY, centro[1] - medida[1] / 2)
-  l.maxY = Math.max(l.maxY, centro[1] + medida[1] / 2)
-  l.minZ = Math.min(l.minZ, centro[2] - medida[2] / 2)
-  l.maxZ = Math.max(l.maxZ, centro[2] + medida[2] / 2)
+/** Luz entre piezas acostadas, en mm. */
+const LUZ_PISO = 70
+
+type PiezaSuelta = { medida: V3; asignar: (t: Tendido) => void }
+
+/**
+ * Como queda una pieza apoyada de plano: el lado mas finito pasa a ser el alto.
+ *
+ * Devuelve el giro que hay que aplicarle, la huella que ocupa en el piso y el
+ * espesor que levanta. Una tapa ya viene acostada; un lateral hay que voltearlo.
+ */
+function acostar(medida: V3): { rot: V3; huella: [number, number]; alto: number } {
+  const [x, y, z] = medida
+  let fino = 1
+  if (x <= y && x <= z) fino = 0
+  else if (z <= y && z <= x) fino = 2
+
+  if (fino === 0) return { rot: [0, 0, Math.PI / 2], huella: [y, z], alto: x }
+  if (fino === 2) return { rot: [Math.PI / 2, 0, 0], huella: [x, y], alto: z }
+  return { rot: [0, 0, 0], huella: [x, z], alto: y }
 }
 
-function aBulto(l: Limites): Bulto {
-  if (l.minX === Infinity) return { ancho: 1, alto: 1, profundidad: 1, centroY: 0 }
+/**
+ * Acuesta todas las piezas del mueble sobre el piso, en filas.
+ *
+ * El despiece no explota en el aire: las piezas se vacian sobre el piso del
+ * taller, de plano, ordenadas de mayor a menor y acomodadas de izquierda a
+ * derecha hasta llenar el ancho de la tirada. El conjunto queda centrado en el
+ * origen para que la camara lo encuadre solo.
+ */
+function acostarEnElPiso(piezas: PiezaSuelta[]): Bulto {
+  if (piezas.length === 0) return { ancho: 1, alto: 1, profundidad: 1, centroY: 0 }
+
+  const acostadas = piezas
+    .map((pieza) => ({ ...pieza, ...acostar(pieza.medida) }))
+    .sort((a, b) => b.huella[0] * b.huella[1] - a.huella[0] * a.huella[1])
+
+  // Ancho de la tirada: se busca que el conjunto quede mas o menos cuadrado.
+  const superficie = acostadas.reduce((total, p) => total + p.huella[0] * p.huella[1], 0)
+  const anchoTirada = Math.max(acostadas[0].huella[0], Math.sqrt(superficie) * 1.45)
+
+  const ubicadas: { pieza: (typeof acostadas)[number]; pos: V3 }[] = []
+  let x = 0
+  let z = 0
+  let fondoFila = 0
+  let anchoUsado = 0
+  let altoMax = 0
+
+  for (const pieza of acostadas) {
+    const [ancho, fondo] = pieza.huella
+    if (x > 0 && x + ancho > anchoTirada) {
+      // Se lleno la fila: baja a la siguiente.
+      z += fondoFila + LUZ_PISO
+      x = 0
+      fondoFila = 0
+    }
+    ubicadas.push({ pieza, pos: [x + ancho / 2, pieza.alto / 2, z + fondo / 2] })
+    x += ancho + LUZ_PISO
+    anchoUsado = Math.max(anchoUsado, x - LUZ_PISO)
+    fondoFila = Math.max(fondoFila, fondo)
+    altoMax = Math.max(altoMax, pieza.alto)
+  }
+
+  const fondoTotal = z + fondoFila
+  // Se acomodo desde el origen hacia +X y +Z: ahora se corre todo al centro.
+  for (const { pieza, pos } of ubicadas) {
+    pieza.asignar({
+      pos: [pos[0] - anchoUsado / 2, pos[1], pos[2] - fondoTotal / 2],
+      rot: pieza.rot,
+    })
+  }
+
   return {
-    ancho: Math.max(1, l.maxX - l.minX),
-    alto: Math.max(1, l.maxY - l.minY),
-    profundidad: Math.max(1, l.maxZ - l.minZ),
-    centroY: (l.minY + l.maxY) / 2,
+    ancho: Math.max(1, anchoUsado),
+    alto: Math.max(1, altoMax),
+    profundidad: Math.max(1, fondoTotal),
+    centroY: altoMax / 2,
   }
 }
 
 /**
- * Envolvente del mueble con todas las piezas separadas. La vista de despiece
- * ocupa mucho mas lugar que el mueble armado, asi que la camara necesita su
- * propia medida para encuadrarla.
+ * Junta todas las piezas del mueble y las acuesta en el piso.
+ *
+ * Las piezas que viven dentro de un grupo (el frente y la caja de un cajon, la
+ * hoja de una puerta) guardan su destino en coordenadas del mundo: al
+ * desarmarse, el grupo vuelve al origen y cada pieza se va sola a su lugar.
  */
-function medirDesarmado(d: Omit<Despiece, 'bultoDesarmado' | 'avisos'>): Bulto {
-  const l = limitesVacios()
-  const correr = (p: V3, o: V3): V3 => [p[0] + o[0], p[1] + o[1], p[2] + o[2]]
+function tenderDespiece(d: Omit<Despiece, 'bultoDesarmado' | 'avisos'>): Bulto {
+  const sueltas: PiezaSuelta[] = []
 
-  for (const panel of [...d.paneles, ...d.rieles]) sumarLimites(l, correr(panel.pos, panel.desarme), panel.medida)
+  for (const panel of [...d.paneles, ...d.rieles]) {
+    sueltas.push({ medida: panel.medida, asignar: (t) => (panel.tendido = t) })
+  }
+  for (const conjunto of d.conjuntos) {
+    sueltas.push({ medida: conjunto.medida, asignar: (t) => (conjunto.tendido = t) })
+  }
   for (const pata of d.patas) {
-    sumarLimites(l, correr(pata.pos, pata.desarme), [pata.seccion, pata.altura, pata.seccion])
+    sueltas.push({ medida: medidaDePata(pata), asignar: (t) => (pata.tendido = t) })
+  }
+  for (const barral of d.barrales) {
+    sueltas.push({
+      medida: [barral.largo, barral.radio * 2, barral.radio * 2],
+      asignar: (t) => (barral.tendido = t),
+    })
   }
   for (const cajon of d.cajones) {
-    const base = correr(cajon.ancla, cajon.desarme)
-    sumarLimites(l, base, cajon.frente.medida)
-    for (const pieza of cajon.interior) sumarLimites(l, correr(base, correr(pieza.pos, pieza.desarme)), pieza.medida)
+    sueltas.push({ medida: cajon.frente.medida, asignar: (t) => (cajon.frente.tendido = t) })
+    for (const pieza of cajon.interior) {
+      sueltas.push({ medida: pieza.medida, asignar: (t) => (pieza.tendido = t) })
+    }
   }
   for (const puerta of d.puertas) {
-    sumarLimites(l, correr(correr(puerta.bisagra, puerta.hoja.centro), puerta.desarme), puerta.hoja.medida)
+    sueltas.push({ medida: puerta.hoja.medida, asignar: (t) => (puerta.hoja.tendido = t) })
   }
-  return aBulto(l)
+
+  return acostarEnElPiso(sueltas)
 }
 
 export function armar(c: Configuracion): Despiece {
@@ -727,84 +1085,29 @@ export function armar(c: Configuracion): Despiece {
   const hFrentes = altoFrentes(c)
   const Wi = anchoInterior(c)
   const profUtil = (c.conFondo ? D - ESPESOR_FONDO : D) - t
-  const paso = pasoDesarme(c)
   const bulto: Bulto = { ancho: W, alto: c.alto, profundidad: D, centroY: c.alto / 2 }
 
-  if (modelo.distribucion === 'mesa') {
-    const tapa = Math.max(t, 25)
-    const altoPata = c.alto - tapa
-    const retiro = 95
-    const seccion = c.baseId === 'patas-metal' ? 45 : 70
-    const paneles: Caja[] = [
-      {
-        id: 'tapa',
-        nombre: 'Tapa',
-        pos: [0, c.alto - tapa / 2, 0],
-        medida: [W, tapa, D],
-        grano: 'x',
-        mat: 'placa',
-        desarme: [0, paso, 0],
-      },
-      {
-        id: 'travesanio-frente',
-        nombre: 'Travesaño',
-        pos: [0, c.alto - tapa - 70, D / 2 - retiro],
-        medida: [Math.max(100, W - 2 * retiro - seccion), 90, 24],
-        grano: 'x',
-        mat: 'placa',
-        desarme: [0, -0.5 * paso, 1.4 * paso],
-      },
-      {
-        id: 'travesanio-fondo',
-        nombre: 'Travesaño',
-        pos: [0, c.alto - tapa - 70, -(D / 2 - retiro)],
-        medida: [Math.max(100, W - 2 * retiro - seccion), 90, 24],
-        grano: 'x',
-        mat: 'placa',
-        desarme: [0, -0.5 * paso, -1.4 * paso],
-      },
-      {
-        id: 'travesanio-izq',
-        nombre: 'Travesaño',
-        pos: [-(W / 2 - retiro), c.alto - tapa - 70, 0],
-        medida: [24, 90, Math.max(100, D - 2 * retiro - seccion)],
-        grano: 'z',
-        mat: 'placa',
-        desarme: [-1.4 * paso, -0.5 * paso, 0],
-      },
-      {
-        id: 'travesanio-der',
-        nombre: 'Travesaño',
-        pos: [W / 2 - retiro, c.alto - tapa - 70, 0],
-        medida: [24, 90, Math.max(100, D - 2 * retiro - seccion)],
-        grano: 'z',
-        mat: 'placa',
-        desarme: [1.4 * paso, -0.5 * paso, 0],
-      },
-    ]
-    const patas: Pata[] = (
-      [
-        [-(W / 2 - retiro), -(D / 2 - retiro)],
-        [W / 2 - retiro, -(D / 2 - retiro)],
-        [-(W / 2 - retiro), D / 2 - retiro],
-        [W / 2 - retiro, D / 2 - retiro],
-      ] as [number, number][]
-    ).map(([x, z], i) => ({
-      id: 'pata-' + i,
-      nombre: c.baseId === 'patas-metal' ? 'Pata de hierro' : 'Pata de madera',
-      pos: [x, altoPata / 2, z] as V3,
-      altura: altoPata,
-      seccion,
-      forma: (c.baseId === 'patas-metal' ? 'tubo' : 'torneada') as Pata['forma'],
-      mat: (c.baseId === 'patas-metal' ? 'metal' : 'placa') as Material,
-      desarme: [Math.sign(x) * 0.9 * paso, -0.9 * paso, Math.sign(z) * 0.9 * paso] as V3,
-    }))
-    const parcial = { paneles, cajones: [], puertas: [], patas, barrales: [], rieles: [], bulto }
-    return { ...parcial, bultoDesarmado: medirDesarmado(parcial), avisos: avisosDe(c, 0, 0) }
+  if (modelo.distribucion === 'escritorio') {
+    const parcial = armarEscritorio(c, modelo.retornoEnL === true)
+    return {
+      ...parcial,
+      bulto: parcial.bulto,
+      bultoDesarmado: tenderDespiece(parcial),
+      avisos: avisosDe(c, 0, 0),
+    }
   }
 
-  const paneles = armarCarcasa(c, paso)
-  const base = armarBase(c, paso)
+  if (modelo.distribucion === 'estanteria-hierro') {
+    const parcial = armarEstanteriaHierro(c)
+    return {
+      ...parcial,
+      bultoDesarmado: tenderDespiece(parcial),
+      avisos: avisosDe(c, parcial.luzEstante, 0),
+    }
+  }
+
+  const paneles = armarCarcasa(c)
+  const base = armarBase(c)
   paneles.push(...base.paneles)
   const cajones: CajonArmado[] = []
   const puertas: PuertaArmada[] = []
@@ -825,7 +1128,6 @@ export function armar(c: Configuracion): Despiece {
       yBase: hb,
       profundidadUtil: profUtil,
       zCara: D / 2,
-      paso,
       adentro: false,
     })
     cajones.push(...grilla.cajones)
@@ -843,7 +1145,6 @@ export function armar(c: Configuracion): Despiece {
         yDesde: hb + t,
         yHasta: hb + hFrentes - t,
         prefijo: 'b',
-        paso,
       }),
     )
   }
@@ -862,7 +1163,6 @@ export function armar(c: Configuracion): Despiece {
         anchoZona: W,
         yBase: hb,
         altoZona: hFrentes,
-        paso,
       })
       puertas.push(...armado.puertas)
       rieles.push(...armado.rieles)
@@ -883,7 +1183,6 @@ export function armar(c: Configuracion): Despiece {
         yBase: hb + t,
         profundidadUtil: profUtil - 30,
         zCara: D / 2 - vueloCorredizas(c, c.cantidadPuertas) - 14,
-        paso,
         adentro: true,
         zonaAbierta,
       })
@@ -900,7 +1199,6 @@ export function armar(c: Configuracion): Despiece {
         yBase: hb,
         profundidadUtil: profUtil,
         zCara: D / 2,
-        paso,
         adentro: false,
       })
       cajones.push(...grilla.cajones)
@@ -916,7 +1214,6 @@ export function armar(c: Configuracion): Despiece {
           anchoZona: W,
           yBase: hb + altoBloque,
           altoZona: hFrentes - altoBloque,
-          paso,
         }),
       )
     } else {
@@ -940,7 +1237,6 @@ export function armar(c: Configuracion): Despiece {
           yBase: hb,
           profundidadUtil: profUtil,
           zCara: D / 2,
-          paso,
           adentro: false,
         })
         cajones.push(...grilla.cajones)
@@ -957,7 +1253,6 @@ export function armar(c: Configuracion): Despiece {
           medida: [t, hFrentes - 2 * t, c.conFondo ? D - ESPESOR_FONDO : D],
           grano: 'y',
           mat: 'placa',
-          desarme: [3 * paso - xParante, 0, 0],
         })
         luzEstante = W - anchoCajonera
       }
@@ -970,7 +1265,6 @@ export function armar(c: Configuracion): Despiece {
             anchoZona: partida ? W - anchoCajonera : W,
             yBase: hb,
             altoZona: hFrentes,
-            paso,
           }),
         )
       }
@@ -987,7 +1281,6 @@ export function armar(c: Configuracion): Despiece {
           medida: [t, yInteriorHasta - yInteriorDesde, c.conFondo ? D - ESPESOR_FONDO : D],
           grano: 'y',
           mat: 'placa',
-          desarme: [3 * paso - xDiv, 0, 0],
         })
         const anchoIzq = xDiv - t / 2 - (-W / 2 + t)
         const anchoDer = W / 2 - t - (xDiv + t / 2)
@@ -1001,7 +1294,6 @@ export function armar(c: Configuracion): Despiece {
             yDesde: yInteriorDesde,
             yHasta: yInteriorHasta,
             prefijo: 'izq',
-            paso,
           }),
         )
         if (c.conBarral && anchoDer > 0) {
@@ -1010,7 +1302,6 @@ export function armar(c: Configuracion): Despiece {
             pos: [(xDiv + t / 2 + (W / 2 - t)) / 2, yInteriorHasta - 90, 20],
             largo: anchoDer,
             radio: 13,
-            desarme: [0, 1.7 * paso, 0],
           })
         }
       } else {
@@ -1023,17 +1314,16 @@ export function armar(c: Configuracion): Despiece {
             yDesde: yInteriorDesde,
             yHasta: yInteriorHasta,
             prefijo: 'col',
-            paso,
           }),
         )
       }
     }
   }
 
-  const parcial = { paneles, cajones, puertas, patas: base.patas, barrales, rieles, bulto }
+  const parcial = { paneles, conjuntos: [], cajones, puertas, patas: base.patas, barrales, rieles, bulto }
   return {
     ...parcial,
-    bultoDesarmado: medirDesarmado(parcial),
+    bultoDesarmado: tenderDespiece(parcial),
     avisos: avisosDe(c, luzEstante, columnasReales),
   }
 }

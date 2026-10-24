@@ -4,12 +4,13 @@ import { MODELOS, modeloDe } from '../data/modelos'
 import { MADERA_POR_ID } from '../data/maderas'
 import { useConfigurador } from '../store/useConfigurador'
 import { MiniVisor } from '../three/MiniVisor'
+import { TarjetaModelo } from './TarjetaModelo'
 import { borrarDisenio, enlaceWhatsapp, listarDisenios, TALLER, type DisenioGuardado } from '../lib/guardado'
 import { medidaCorta } from '../lib/formato'
 import { FONDO_ESCENA } from '../lib/tema'
 
 /** El mueble que se muestra en la portada. Es el que mas se pide. */
-const DESTACADO = 'placar'
+const DESTACADO = 'escritorio-l'
 
 export function Catalogo({ tema }: { tema: 'claro' | 'oscuro' }) {
   const elegirModelo = useConfigurador((s) => s.elegirModelo)
@@ -26,9 +27,9 @@ export function Catalogo({ tema }: { tema: 'claro' | 'oscuro' }) {
     <main className="catalogo">
       <section className="intro">
         <div>
-          <h1 className="intro__titulo">El mueble que necesitas, con tus medidas.</h1>
+          <h1 className="intro__titulo">Hierro y madera, con tus medidas.</h1>
           <p className="intro__texto">
-            Elegí un mueble, ajustá las medidas al centímetro y mirá cómo queda antes de encargarlo.
+            Elegí el mueble, las medidas, la madera y el color del hierro. Miralo en 3D antes de encargarlo.
           </p>
           <div className="intro__acciones">
             <button
@@ -41,7 +42,7 @@ export function Catalogo({ tema }: { tema: 'claro' | 'oscuro' }) {
             </button>
             <a
               className="boton boton--linea"
-              href={enlaceWhatsapp('Hola! Quiero consultar por un mueble a medida.')}
+              href={enlaceWhatsapp('Hola! Quiero consultar por un mueble a medida de Ironwoods.')}
               target="_blank"
               rel="noreferrer"
             >
@@ -54,30 +55,18 @@ export function Catalogo({ tema }: { tema: 'claro' | 'oscuro' }) {
           <div className="intro__visor">
             <MiniVisor modeloId={DESTACADO} fondo={fondo} />
           </div>
-          <p className="intro__pie">{modeloDe(DESTACADO).nombre}, armado con las medidas que mas se repiten.</p>
+          <p className="intro__pie">{modeloDe(DESTACADO).nombre}, con las medidas que mas se piden.</p>
         </div>
       </section>
 
       <section className="seccion" ref={rejilla}>
         <div className="seccion__cabecera">
-          <h2 className="seccion__titulo">Muebles que hacemos</h2>
-          <p className="seccion__nota">Pasá el puntero por arriba para verlo girar.</p>
+          <h2 className="seccion__titulo">Lo que hacemos</h2>
+          <p className="seccion__nota">Elegí las opciones acá y se ven al toque en el dibujo.</p>
         </div>
         <div className="rejilla-modelos">
           {MODELOS.map((modelo) => (
-            <button key={modelo.id} type="button" className="tarjeta-modelo" onClick={() => elegirModelo(modelo.id)}>
-              <span className="tarjeta-modelo__lienzo">
-                <MiniVisor modeloId={modelo.id} fondo={fondo} />
-              </span>
-              <span className="tarjeta-modelo__cuerpo">
-                <span className="tarjeta-modelo__nombre">{modelo.nombre}</span>
-                <span className="tarjeta-modelo__resumen">{modelo.resumen}</span>
-                <span className="tarjeta-modelo__medidas num">
-                  {medidaCorta(modelo.inicial.ancho)} x {medidaCorta(modelo.inicial.alto)} x{' '}
-                  {medidaCorta(modelo.inicial.profundidad)} cm
-                </span>
-              </span>
-            </button>
+            <TarjetaModelo key={modelo.id} modelo={modelo} fondo={fondo} alElegir={elegirModelo} />
           ))}
         </div>
       </section>
@@ -136,10 +125,16 @@ export function Catalogo({ tema }: { tema: 'claro' | 'oscuro' }) {
       <footer className="pie">
         <div className="pie__cuerpo">
           <span>
-            {TALLER.nombre}, {TALLER.zona}
+            {TALLER.nombre}, {TALLER.bajada.toLowerCase()}
           </span>
-          <a href={'mailto:' + TALLER.email}>{TALLER.email}</a>
-          <span>Las medidas finales se verifican en el lugar antes de cortar.</span>
+          <a href={'https://instagram.com/' + TALLER.instagram} target="_blank" rel="noreferrer">
+            @{TALLER.instagram}
+          </a>
+          <a href={TALLER.sitio} target="_blank" rel="noreferrer">
+            ironwoods.com.ar
+          </a>
+          {TALLER.email ? <a href={'mailto:' + TALLER.email}>{TALLER.email}</a> : null}
+          <span>Todo se fabrica a medida. Las medidas finales se confirman antes de cortar.</span>
         </div>
       </footer>
     </main>

@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { configuracionInicial } from '../data/modelos'
 import { armar } from '../lib/geometria'
+import type { Configuracion } from '../lib/tipos'
 import { Mueble } from './Mueble'
 import { distanciaEncuadre } from './encuadre'
 import { useMenosMovimiento } from '../lib/preferencias'
@@ -38,6 +39,8 @@ function Encuadre({ bulto }: { bulto: Despiece['bulto'] }) {
 type Props = {
   modeloId: string
   fondo: string
+  /** Lo que se eligio en la tarjeta, para que la vista previa lo muestre. */
+  ajustes?: Partial<Configuracion>
   /** Vista previa de catalogo: gira solo mientras el puntero esta encima. */
   interactivo?: boolean
 }
@@ -47,13 +50,13 @@ type Props = {
  * no una foto de archivo: lo que ve el cliente en la tarjeta es exactamente lo
  * que se abre en el configurador.
  */
-export function MiniVisor({ modeloId, fondo, interactivo = true }: Props) {
+export function MiniVisor({ modeloId, fondo, ajustes, interactivo = true }: Props) {
   const sinAnimacion = useMenosMovimiento()
   const [activo, setActivo] = useState(false)
   const { config, despiece } = useMemo(() => {
-    const config = configuracionInicial(modeloId)
+    const config = { ...configuracionInicial(modeloId), ...ajustes }
     return { config, despiece: armar(config) }
-  }, [modeloId])
+  }, [modeloId, ajustes])
 
   const girando = interactivo && activo && !sinAnimacion
 
@@ -67,9 +70,11 @@ export function MiniVisor({ modeloId, fondo, interactivo = true }: Props) {
       onPointerEnter={() => setActivo(true)}
       onPointerLeave={() => setActivo(false)}
     >
-      <hemisphereLight intensity={0.7} groundColor="#8a8a84" />
-      <directionalLight position={[2.2, 3.4, 2.6]} intensity={2} />
-      <directionalLight position={[-2.4, 1.6, -1.6]} intensity={0.5} />
+      {/* Misma calibracion que el visor grande: la madera tiene que verse igual
+          en la tarjeta y en el configurador. */}
+      <hemisphereLight intensity={0.42} groundColor="#8a8a84" />
+      <directionalLight position={[2.2, 3.4, 2.6]} intensity={1.35} />
+      <directionalLight position={[-2.4, 1.6, -1.6]} intensity={0.32} />
       <Encuadre bulto={despiece.bulto} />
       {/* El mueble se dibuja desde el piso hacia arriba: se baja medio alto para que gire sobre su centro. */}
       <Giro activo={girando}>

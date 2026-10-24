@@ -1,24 +1,21 @@
 import { Suspense, useMemo, useState } from 'react'
-import { ArrowsOutSimple, Check, FloppyDisk, LinkSimple, Package, Stack } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowRight, ArrowsOutSimple, Check, FloppyDisk, LinkSimple, Stack } from '@phosphor-icons/react'
 import { useConfigurador } from '../store/useConfigurador'
 import { modeloDe } from '../data/modelos'
 import { Visor } from '../three/Visor'
 import { tomarFoto } from '../three/captura'
 import { enlaceDeDisenio, guardarDisenio } from '../lib/guardado'
 import { enNumero } from '../lib/formato'
-import { ACENTO_ESCENA, FONDO_ESCENA } from '../lib/tema'
-import { PanelHerrajes, PanelInterior, PanelMaterial, PanelMedidas, type Pestania } from './PanelAjustes'
+import { ACENTO_ESCENA, AMBIENTE } from '../lib/tema'
+import { PanelEstructura, PanelHerrajes, PanelInterior, PanelMadera, PanelMedidas } from './PanelAjustes'
 import { Resumen } from './Resumen'
 import { Piezas } from './Piezas'
+import { Repaso } from './Repaso'
 import { Formulario } from './Formulario'
+import { pasosDe, type PasoId } from './pasos'
 
-const PESTANIAS: { id: Pestania; titulo: string }[] = [
-  { id: 'medidas', titulo: 'Medidas' },
-  { id: 'material', titulo: 'Material' },
-  { id: 'interior', titulo: 'Interior' },
-  { id: 'piezas', titulo: 'Piezas' },
-  { id: 'presupuesto', titulo: 'Presupuesto' },
-]
+/** Referencia estable: evita rehacer el resaltado del visor en cada render. */
+const VACIO: string[] = []
 
 function Guardar() {
   const config = useConfigurador((s) => s.config)
@@ -103,14 +100,15 @@ function Compartir() {
         }
       }}
     >
-      {copiado ? <Check size={17} className="icono" aria-hidden="true" /> : <LinkSimple size={17} className="icono" aria-hidden="true" />}
+      {copiado ? (
+        <Check size={17} className="icono" aria-hidden="true" />
+      ) : (
+        <LinkSimple size={17} className="icono" aria-hidden="true" />
+      )}
       {copiado ? 'Link copiado' : 'Copiar link del diseño'}
     </button>
   )
 }
-
-/** Referencia estable: evita rehacer el resaltado del visor en cada render. */
-const VACIO: string[] = []
 
 export function Taller({ tema }: { tema: 'claro' | 'oscuro' }) {
   const config = useConfigurador((s) => s.config)
@@ -123,11 +121,38 @@ export function Taller({ tema }: { tema: 'claro' | 'oscuro' }) {
   const alternarApertura = useConfigurador((s) => s.alternarApertura)
   const alternarDesarme = useConfigurador((s) => s.alternarDesarme)
   const destacarDesdeVisor = useConfigurador((s) => s.destacarDesdeVisor)
-  const [pestania, setPestania] = useState<Pestania>('medidas')
+
   const modelo = modeloDe(config.modeloId)
+  const pasos = useMemo(() => pasosDe(modelo), [modelo])
+  const [pasoId, setPasoId] = useState<PasoId>('medidas')
+  // Si el mueble que se abre no tiene el paso guardado, se vuelve al primero.
+  const indice = Math.max(
+    0,
+    pasos.findIndex((p) => p.id === pasoId),
+  )
+  const paso = pasos[indice]
+  const esUltimo = indice === pasos.length - 1
+
   const tieneFrentes = despiece.cajones.length + despiece.puertas.length > 0
   const filaDestacada = piezas.find((pieza) => pieza.clave === piezaDestacada) ?? null
   const destacados = filaDestacada ? filaDestacada.ids : VACIO
+  const etiquetaPieza = filaDestacada
+    ? filaDestacada.nombre +
+      (filaDestacada.cantidad > 1 ? ' (x' + filaDestacada.cantidad + ')' : '') +
+      '  ' +
+      filaDestacada.largo +
+      ' x ' +
+      filaDestacada.ancho +
+      ' x ' +
+      filaDestacada.espesor +
+      ' mm'
+    : null
+
+  const irA = (id: PasoId) => {
+    setPasoId(id)
+    // En celular el panel va debajo del visor: hay que subir al principio.
+    document.querySelector('.panel__pasos')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
     <main className="taller">
@@ -146,9 +171,10 @@ export function Taller({ tema }: { tema: 'claro' | 'oscuro' }) {
               config={config}
               abierto={abierto}
               desarmado={desarmado}
-              fondo={FONDO_ESCENA[tema]}
               acento={ACENTO_ESCENA[tema]}
+              ambiente={AMBIENTE[tema]}
               destacados={destacados}
+              etiqueta={etiquetaPieza}
               alSeñalar={destacarDesdeVisor}
             />
           </Suspense>
@@ -172,8 +198,8 @@ export function Taller({ tema }: { tema: 'claro' | 'oscuro' }) {
             aria-pressed={desarmado}
             onClick={() => {
               alternarDesarme()
-              // Al separar las piezas, el panel pasa a la lista con las medidas de cada una.
-              if (!desarmado) setPestania('piezas')
+              // Al separar las piezas, el panel va al paso donde esta la lista.
+              if (!desarmado) irA('pedido')
             }}
           >
             <Stack size={15} className="icono" aria-hidden="true" />
@@ -201,7 +227,7 @@ export function Taller({ tema }: { tema: 'claro' | 'oscuro' }) {
               </>
             ) : (
               <>
-                <span className="num">{enNumero(computo.placaM2)} m2</span> de placa
+                <span className="num">{enNumero(computo.placaM2)} m2</span> de madera
                 {' · '}
                 <span className="num">{computo.piezas}</span> piezas
               </>
@@ -211,39 +237,56 @@ export function Taller({ tema }: { tema: 'claro' | 'oscuro' }) {
       </div>
 
       <div className="panel">
-        <div className="panel__pestanias" role="tablist" aria-label="Ajustes del mueble">
-          {PESTANIAS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className="pestania"
-              role="tab"
-              aria-selected={pestania === p.id}
-              onClick={() => setPestania(p.id)}
-            >
-              {p.titulo}
-            </button>
-          ))}
+        <div className="panel__pasos">
+          <ol className="pasos" aria-label="Pasos para armar el mueble">
+            {pasos.map((p, i) => {
+              const estado = i === indice ? 'actual' : i < indice ? 'hecho' : 'pendiente'
+              return (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="pasos__paso"
+                    data-estado={estado}
+                    aria-current={i === indice ? 'step' : undefined}
+                    onClick={() => irA(p.id)}
+                  >
+                    <span className="pasos__numero" aria-hidden="true">
+                      {i < indice ? <Check size={11} weight="bold" /> : i + 1}
+                    </span>
+                    <span className="pasos__titulo">{p.titulo}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
+          <p className="panel__bajada">
+            <span className="panel__cuenta num">
+              Paso {indice + 1} de {pasos.length}
+            </span>
+            {paso.bajada}
+          </p>
         </div>
 
         <div className="panel__cuerpo">
-          {pestania === 'medidas' ? <PanelMedidas /> : null}
-          {pestania === 'material' ? <PanelMaterial /> : null}
-          {pestania === 'interior' ? (
+          {paso.id === 'medidas' ? <PanelMedidas /> : null}
+          {paso.id === 'madera' ? <PanelMadera /> : null}
+          {paso.id === 'estructura' ? <PanelEstructura /> : null}
+          {paso.id === 'interior' ? (
             <>
               <PanelInterior />
               <PanelHerrajes />
-              {modelo.distribucion === 'mesa' ? (
-                <p className="grupo__nota">
-                  La mesa no lleva cajones ni herrajes: lo unico que se elige es como apoya y la madera de la tapa.
-                </p>
-              ) : null}
             </>
           ) : null}
-          {pestania === 'piezas' ? <Piezas /> : null}
-          {pestania === 'presupuesto' ? (
+          {paso.id === 'pedido' ? (
             <>
+              <Repaso alIrAlPaso={irA} />
               <Resumen />
+              <details className="plegable">
+                <summary className="plegable__titulo">Ver el despiece, pieza por pieza</summary>
+                <div className="plegable__cuerpo">
+                  <Piezas />
+                </div>
+              </details>
               <div className="grupo">
                 <h3 className="grupo__titulo">Guardar y compartir</h3>
                 <Guardar />
@@ -252,18 +295,29 @@ export function Taller({ tema }: { tema: 'claro' | 'oscuro' }) {
               <div className="grupo">
                 <h3 className="grupo__titulo">Pedir el presupuesto</h3>
                 <p className="grupo__nota">
-                  Mandanos el mueble como lo armaste. Lo miramos en el taller y te contestamos con el precio y
-                  el plazo de entrega.
+                  Mandanos el mueble como lo armaste. Lo miramos en el taller y te contestamos con el precio y el
+                  plazo de entrega.
                 </p>
                 <Formulario />
               </div>
             </>
           ) : null}
+        </div>
 
-          {pestania !== 'presupuesto' ? (
-            <button type="button" className="boton boton--ancho" onClick={() => setPestania('presupuesto')}>
-              <Package size={17} className="icono" aria-hidden="true" />
-              Pedir el presupuesto
+        <div className="panel__navegacion">
+          <button
+            type="button"
+            className="boton boton--linea"
+            disabled={indice === 0}
+            onClick={() => irA(pasos[Math.max(0, indice - 1)].id)}
+          >
+            <ArrowLeft size={16} className="icono" aria-hidden="true" />
+            Atras
+          </button>
+          {!esUltimo ? (
+            <button type="button" className="boton" onClick={() => irA(pasos[indice + 1].id)}>
+              Seguir con {pasos[indice + 1].titulo.toLowerCase()}
+              <ArrowRight size={16} className="icono" aria-hidden="true" />
             </button>
           ) : null}
         </div>

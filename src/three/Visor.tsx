@@ -4,6 +4,8 @@ import { ContactShadows, OrbitControls } from '@react-three/drei'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import * as THREE from 'three'
 import { Mueble } from './Mueble'
+import { Escenario } from './Escenario'
+import { Cotas } from './Cotas'
 import { distanciaEncuadre } from './encuadre'
 import { camara } from './captura'
 import { useMenosMovimiento } from '../lib/preferencias'
@@ -16,12 +18,14 @@ type Props = {
   abierto: boolean
   /** Mueble separado en piezas. */
   desarmado: boolean
-  /** Color de fondo de la escena, tomado de los tokens del tema. */
-  fondo: string
-  /** Color del contorno de la pieza señalada. */
+  /** Color del contorno de la pieza señalada y de las cotas. */
   acento: string
+  /** Colores del piso y la pared del ambiente. */
+  ambiente: { piso: string; pared: string }
   /** Ids de las piezas a resaltar. */
   destacados: string[]
+  /** Nombre y medida de la pieza señalada. */
+  etiqueta: string | null
   alSeñalar: (id: string | null) => void
 }
 
@@ -30,16 +34,16 @@ type Props = {
  * movimiento automatico del visor: avisa que la medida cambio sin que el
  * cliente tenga que buscar el mueble de nuevo.
  */
-function Encuadre({ bulto, sinAnimacion }: { bulto: Bulto; sinAnimacion: boolean }) {
+function Encuadre({ bulto, margen, sinAnimacion }: { bulto: Bulto; margen: number; sinAnimacion: boolean }) {
   const camaraActiva = useThree((s) => s.camera) as THREE.PerspectiveCamera
   const controles = useThree((s) => s.controls) as { target: THREE.Vector3; update: () => void } | null
   // El tamaño del lienzo entra en el encuadre: se recalcula tambien al redimensionar.
   const medidaLienzo = useThree((s) => s.size)
   const objetivoAltura = bulto.centroY / 1000
   const distanciaObjetivo = useMemo(
-    () => distanciaEncuadre(bulto, camaraActiva),
+    () => distanciaEncuadre(bulto, camaraActiva, margen),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bulto, camaraActiva, medidaLienzo.width, medidaLienzo.height],
+    [bulto, margen, camaraActiva, medidaLienzo.width, medidaLienzo.height],
   )
   const primerCuadro = useRef(true)
   const pendiente = useRef(true)
@@ -143,11 +147,26 @@ function Fondo({ color }: { color: string }) {
   return null
 }
 
-export function Visor({ despiece, config, abierto, desarmado, fondo, acento, destacados, alSeñalar }: Props) {
+export function Visor({
+  despiece,
+  config,
+  abierto,
+  desarmado,
+  acento,
+  ambiente,
+  destacados,
+  etiqueta,
+  alSeñalar,
+}: Props) {
   const sinAnimacion = useMenosMovimiento()
   // El despiece abierto ocupa mucho mas lugar que el mueble armado y tiene su
   // propio centro: la camara necesita encuadrar uno u otro segun el modo.
   const bultoActivo = desarmado ? despiece.bultoDesarmado : despiece.bulto
+  // La sombra tiene que cubrir todo lo que hay en el piso, armado o desarmado.
+  const radioSombra = Math.max(
+    2.5,
+    (Math.max(bultoActivo.ancho, bultoActivo.profundidad, bultoActivo.alto) / 1000) * 1.6,
+  )
   // Punto de partida aproximado: el encuadre exacto lo ajusta <Encuadre /> con el lienzo ya medido.
   const diagonal = Math.hypot(despiece.bulto.ancho, despiece.bulto.alto, despiece.bulto.profundidad) / 1000
   const distancia = Math.max(1.6, diagonal * 1.2)
@@ -160,22 +179,29 @@ export function Visor({ despiece, config, abierto, desarmado, fondo, acento, des
       gl={{ antialias: true, preserveDrawingBuffer: true }}
       camera={{ position: [distancia * 0.72, distancia * 0.52, distancia * 0.78], fov: 38, near: 0.05, far: 60 }}
     >
-      <Fondo color={fondo} />
+      <Fondo color={ambiente.pared} />
       <Fotografo />
 
-      <hemisphereLight intensity={0.45} groundColor="#8a8a84" />
+      {/*
+        Las intensidades estan calibradas para que la madera se vea en el tono
+        del laqueado. Con la suma de luces mas alta, el mapeo de tonos levanta
+        el albedo y el Nogal se lee como un marron medio: en una marca donde el
+        tono del laqueado es la eleccion principal, eso engaña al cliente.
+      */}
+      <hemisphereLight intensity={0.3} groundColor="#8a8a84" />
       <directionalLight
-        position={[2.6, 4.2, 3.4]}
-        intensity={2.1}
+        position={[radioSombra * 1.1, radioSombra * 1.7, radioSombra * 1.4]}
+        intensity={1.2}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0004}
-        shadow-camera-left={-3}
-        shadow-camera-right={3}
-        shadow-camera-top={3.5}
-        shadow-camera-bottom={-1}
+        shadow-bias={-0.0006}
+        shadow-camera-left={-radioSombra}
+        shadow-camera-right={radioSombra}
+        shadow-camera-top={radioSombra}
+        shadow-camera-bottom={-radioSombra}
+        shadow-camera-far={radioSombra * 6}
       />
-      <directionalLight position={[-3.2, 2.2, -1.8]} intensity={0.6} />
+      <directionalLight position={[-3.2, 2.2, -1.8]} intensity={0.35} />
 
       <Ambiente />
 
@@ -186,14 +212,25 @@ export function Visor({ despiece, config, abierto, desarmado, fondo, acento, des
         desarmado={desarmado}
         sinAnimacion={sinAnimacion}
         destacados={destacados}
+        etiqueta={etiqueta}
         acento={acento}
         alSeñalar={alSeñalar}
       />
 
-      {/* Con las piezas separadas hay madera por debajo del piso: la sombra de apoyo deja de tener sentido. */}
+      <Escenario bulto={bultoActivo} colorPiso={ambiente.piso} colorPared={ambiente.pared} />
+
       {desarmado ? null : (
-        <ContactShadows position={[0, 0.001, 0]} opacity={0.42} scale={Math.max(4, distancia * 2.4)} blur={2.4} far={2.2} />
+        <ContactShadows
+          position={[0, 0.001, 0]}
+          opacity={0.4}
+          scale={Math.max(4, distancia * 2.4)}
+          blur={2.4}
+          far={2.2}
+        />
       )}
+
+      {/* Las cotas miden el mueble armado: con las piezas en el piso no hay caja que medir. */}
+      {desarmado ? null : <Cotas bulto={despiece.bulto} color={acento} />}
 
       <OrbitControls
         makeDefault
@@ -206,7 +243,12 @@ export function Visor({ despiece, config, abierto, desarmado, fondo, acento, des
         maxPolarAngle={Math.PI / 2 - 0.03}
         minPolarAngle={0.12}
       />
-      <Encuadre bulto={bultoActivo} sinAnimacion={sinAnimacion} />
+      {/*
+        Armado necesita mas aire porque las cotas se dibujan por fuera del
+        mueble; desarmado no hay cotas, asi que las piezas pueden llenar mas el
+        cuadro en vez de quedar chiquitas en el medio del piso.
+      */}
+      <Encuadre bulto={bultoActivo} margen={desarmado ? 1.08 : 1.24} sinAnimacion={sinAnimacion} />
     </Canvas>
   )
 }

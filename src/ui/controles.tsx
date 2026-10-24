@@ -9,13 +9,20 @@ type PropsCampo = {
   children: ReactNode
   /** Id del control, para que la etiqueta lo apunte. */
   para?: string
+  /**
+   * Esconde la etiqueta a la vista cuando el titulo del grupo ya dice lo mismo.
+   * Sigue estando para el lector de pantalla: lo que sobra es repetirla a la
+   * vista, no la etiqueta en si.
+   */
+  etiquetaOculta?: boolean
 }
 
 /** Etiqueta arriba, control, ayuda o error abajo. Siempre en ese orden. */
-export function Campo({ etiqueta, ayuda, error, extra, children, para }: PropsCampo) {
+export function Campo({ etiqueta, ayuda, error, extra, children, para, etiquetaOculta }: PropsCampo) {
+  const soloLectores = etiquetaOculta && !extra
   return (
     <div className="campo">
-      <div className="campo__etiqueta">
+      <div className={soloLectores ? 'sr' : 'campo__etiqueta'}>
         {para ? <label htmlFor={para}>{etiqueta}</label> : <span>{etiqueta}</span>}
         {extra}
       </div>
@@ -111,16 +118,18 @@ export function Segmentado<T extends string | number>({
   opciones,
   valor,
   ayuda,
+  etiquetaOculta,
   alElegir,
 }: {
   etiqueta: string
   opciones: { valor: T; titulo: string }[]
   valor: T
   ayuda?: string
+  etiquetaOculta?: boolean
   alElegir: (valor: T) => void
 }) {
   return (
-    <Campo etiqueta={etiqueta} ayuda={ayuda}>
+    <Campo etiqueta={etiqueta} ayuda={ayuda} etiquetaOculta={etiquetaOculta}>
       <div className="segmentado" role="group" aria-label={etiqueta}>
         {opciones.map((opcion) => (
           <button
@@ -143,16 +152,18 @@ export function ListaOpciones<T extends string>({
   opciones,
   valor,
   ayuda,
+  etiquetaOculta,
   alElegir,
 }: {
   etiqueta: string
   opciones: Opcion<T>[]
   valor: T
   ayuda?: string
+  etiquetaOculta?: boolean
   alElegir: (valor: T) => void
 }) {
   return (
-    <Campo etiqueta={etiqueta} ayuda={ayuda}>
+    <Campo etiqueta={etiqueta} ayuda={ayuda} etiquetaOculta={etiquetaOculta}>
       <div className="lista-opciones" role="group" aria-label={etiqueta}>
         {opciones.map((opcion) => {
           const elegida = opcion.valor === valor
@@ -182,18 +193,20 @@ export function ListaOpciones<T extends string>({
 export function Muestrario({
   etiqueta,
   ayuda,
+  etiquetaOculta,
   opciones,
   valor,
   alElegir,
 }: {
   etiqueta: string
   ayuda?: string
+  etiquetaOculta?: boolean
   opciones: { id: string; nombre: string; color: string; nota: string }[]
   valor: string
   alElegir: (id: string) => void
 }) {
   return (
-    <Campo etiqueta={etiqueta} ayuda={ayuda}>
+    <Campo etiqueta={etiqueta} ayuda={ayuda} etiquetaOculta={etiquetaOculta}>
       <div className="muestrario" role="group" aria-label={etiqueta}>
         {opciones.map((opcion) => (
           <button
