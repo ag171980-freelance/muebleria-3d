@@ -1,6 +1,7 @@
 import { configuracionInicial, MODELO_POR_ID } from '../data/modelos'
 import { MARCA } from '../data/marca'
 import { normalizarAlturas } from './cajones'
+import type { PiezaDeLista } from './piezas'
 import type { Configuracion } from './tipos'
 
 const CLAVE_DISENIOS = 'ironwoods.disenios.v1'
@@ -22,6 +23,22 @@ export type DatosContacto = {
   localidad: string
   plazo: string
   comentarios: string
+}
+
+/**
+ * Los plazos viven aca y no en el formulario porque el valor corto es lo que
+ * viaja en el pedido, y el texto largo es lo que tiene que leer el carpintero
+ * en la hoja impresa.
+ */
+export const PLAZOS = [
+  { valor: 'cuanto-antes', titulo: 'Lo antes posible' },
+  { valor: 'un-mes', titulo: 'Dentro del mes' },
+  { valor: 'dos-tres-meses', titulo: 'En dos o tres meses' },
+  { valor: 'solo-precio', titulo: 'Por ahora solo quiero el precio' },
+] as const
+
+export function etiquetaDePlazo(valor: string): string {
+  return PLAZOS.find((p) => p.valor === valor)?.titulo ?? valor
 }
 
 /** Se re-exporta para no tocar todas las pantallas: los datos viven en marca.ts. */
@@ -146,54 +163,116 @@ export function borrarDisenio(id: string): DisenioGuardado[] {
 export type Pedido = {
   contacto: DatosContacto
   config: Configuracion
-  resumen: Record<string, string | number>
+  resumen: Record<string, string>
+  /** Lista de corte, para que la hoja impresa sirva en el taller. */
+  piezas: PiezaDeLista[]
   miniatura?: string
   enlace: string
 }
 
+/** La hoja del pedido ya armada, para descargarla desde la pantalla de gracias. */
+export type HojaPdf = { blob: Blob; nombre: string }
+
 export type ResultadoEnvio =
-  | { estado: 'enviado'; referencia: string }
-  | { estado: 'local'; motivo: string; archivo: string }
+  | { estado: 'enviado'; referencia: string; pdf: HojaPdf | null }
+  | { estado: 'local'; motivo: string; archivo: string; pdf: HojaPdf | null }
+
+/**
+ * Arma la hoja del pedido en PDF. Si algo falla (el navegador sin memoria, la
+ * carga de jsPDF cortada) devuelve null: el pedido se manda igual, lo que no
+ * puede pasar es que el cliente pierda el envio por un problema de impresion.
+ */
+async function hojaDelPedido(pedido: Pedido, referencia?: string): Promise<(HojaPdf & { base64: string }) | null> {
+  try {
+    const { armarPdf } = await import('./pdf')
+    return await armarPdf({
+      contacto: { ...pedido.contacto, plazo: etiquetaDePlazo(pedido.contacto.plazo) },
+      resumen: pedido.resumen,
+      piezas: pedido.piezas,
+      miniatura: pedido.miniatura,
+      enlace: pedido.enlace,
+      referencia,
+      marca: MARCA,
+    })
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Deja la hoja junto al pedido, en api/data/pedidos/<referencia>.pdf.
+ *
+ * Va en un segundo pedido y no en el primero a proposito: el numero de pedido
+ * lo asigna el servidor, asi que recien despues de su respuesta se puede
+ * imprimir en la hoja. Si este paso falla el taller igual tiene todo en el
+ * JSON, y el cliente se queda con el PDF descargado.
+ */
+async function dejarPdfEnElTaller(referencia: string, base64: string): Promise<void> {
+  try {
+    await fetch('api/presupuesto.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accion: 'pdf', referencia, pdf: base64 }),
+    })
+  } catch {
+    // Sin conexion no hay nada que hacer, y el pedido ya quedo registrado.
+  }
+}
 
 /**
  * Manda el pedido al taller. Si el endpoint PHP no esta disponible (por ejemplo
- * en el servidor de desarrollo de Vite), el pedido no se pierde: se deja un
- * archivo descargable y se ofrece el envio por WhatsApp.
+ * en el servidor de desarrollo de Vite), el pedido no se pierde: se descarga la
+ * hoja en PDF y se ofrece el envio por WhatsApp.
  */
 export async function enviarPedido(pedido: Pedido): Promise<ResultadoEnvio> {
-  const cuerpo = JSON.stringify(pedido)
   try {
     const respuesta = await fetch('api/presupuesto.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: cuerpo,
+      body: JSON.stringify(pedido),
     })
     const tipo = respuesta.headers.get('content-type') ?? ''
     if (respuesta.ok && tipo.includes('application/json')) {
       const datos = (await respuesta.json()) as { ok?: boolean; referencia?: string; error?: string }
-      if (datos.ok && datos.referencia) return { estado: 'enviado', referencia: datos.referencia }
+      if (datos.ok && datos.referencia) {
+        const hoja = await hojaDelPedido(pedido, datos.referencia)
+        if (hoja) await dejarPdfEnElTaller(datos.referencia, hoja.base64)
+        return { estado: 'enviado', referencia: datos.referencia, pdf: hoja }
+      }
       throw new Error(datos.error ?? 'El servidor no confirmo el pedido.')
     }
     throw new Error('El servidor respondio ' + respuesta.status + '.')
   } catch (error) {
-    const nombreArchivo = 'pedido-' + pedido.config.modeloId + '-' + Date.now().toString(36) + '.json'
-    descargar(nombreArchivo, cuerpo, 'application/json')
-    return {
-      estado: 'local',
-      motivo: error instanceof Error ? error.message : 'No se pudo contactar al servidor.',
-      archivo: nombreArchivo,
+    const motivo = error instanceof Error ? error.message : 'No se pudo contactar al servidor.'
+    const hoja = await hojaDelPedido(pedido)
+    if (hoja) {
+      descargarBlob(hoja.blob, hoja.nombre)
+      return { estado: 'local', motivo, archivo: hoja.nombre, pdf: hoja }
     }
+    // Ultimo recurso: el pedido crudo, que el taller puede volver a abrir.
+    const nombreArchivo = 'pedido-' + pedido.config.modeloId + '-' + Date.now().toString(36) + '.json'
+    descargar(nombreArchivo, JSON.stringify(pedido), 'application/json')
+    return { estado: 'local', motivo, archivo: nombreArchivo, pdf: null }
   }
 }
 
-export function descargar(nombre: string, contenido: string, tipo: string): void {
-  const blob = new Blob([contenido], { type: tipo })
+export function descargarBlob(blob: Blob, nombre: string): void {
   const url = URL.createObjectURL(blob)
   const ancla = document.createElement('a')
   ancla.href = url
   ancla.download = nombre
+  // Firefox ignora el click si el enlace no esta en el documento.
+  ancla.style.display = 'none'
+  document.body.append(ancla)
   ancla.click()
-  URL.revokeObjectURL(url)
+  ancla.remove()
+  // El click ya abrio la descarga; se libera en el siguiente turno para que
+  // Firefox llegue a leer el blob antes de que desaparezca.
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+export function descargar(nombre: string, contenido: string, tipo: string): void {
+  descargarBlob(new Blob([contenido], { type: tipo }), nombre)
 }
 
 /** Texto para mandar por WhatsApp cuando el cliente prefiere escribir. */

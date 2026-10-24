@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle, FloppyDisk, PaperPlaneTilt, WarningCircle, WhatsappLogo } from '@phosphor-icons/react'
+import { CheckCircle, FilePdf, FloppyDisk, PaperPlaneTilt, WarningCircle, WhatsappLogo } from '@phosphor-icons/react'
 import { useConfigurador } from '../store/useConfigurador'
 import { resumenDelPedido } from '../lib/resumen'
 import { tomarFoto } from '../three/captura'
 import {
-  TALLER,
+  PLAZOS,
+  descargarBlob,
   enlaceDeDisenio,
   enlaceWhatsapp,
   enviarPedido,
@@ -13,13 +14,6 @@ import {
   type ResultadoEnvio,
 } from '../lib/guardado'
 import { Campo } from './controles'
-
-const PLAZOS = [
-  { valor: 'cuanto-antes', titulo: 'Lo antes posible' },
-  { valor: 'un-mes', titulo: 'Dentro del mes' },
-  { valor: 'dos-tres-meses', titulo: 'En dos o tres meses' },
-  { valor: 'solo-precio', titulo: 'Por ahora solo quiero el precio' },
-]
 
 const VACIO: DatosContacto = {
   nombre: '',
@@ -50,6 +44,7 @@ export function Formulario() {
   const config = useConfigurador((s) => s.config)
   const despiece = useConfigurador((s) => s.despiece)
   const computo = useConfigurador((s) => s.computo)
+  const piezas = useConfigurador((s) => s.piezas)
 
   const [datos, setDatos] = useState<DatosContacto>(VACIO)
   const [errores, setErrores] = useState<Errores>({})
@@ -87,6 +82,7 @@ export function Formulario() {
         contacto: datos,
         config,
         resumen,
+        piezas,
         miniatura: tomarFoto() ?? undefined,
         enlace,
       })
@@ -100,6 +96,13 @@ export function Formulario() {
 
   if (resultado) {
     const texto = mensajeWhatsapp({ resumen, enlace, contacto: datos })
+    const hoja = resultado.pdf
+    const botonPdf = hoja ? (
+      <button type="button" className="boton boton--linea" onClick={() => descargarBlob(hoja.blob, hoja.nombre)}>
+        <FilePdf size={17} className="icono" aria-hidden="true" />
+        Descargar el PDF
+      </button>
+    ) : null
     return (
       <div className={'resultado' + (resultado.estado === 'enviado' ? ' resultado--ok' : '')}>
         <p className="resultado__titulo">
@@ -116,29 +119,29 @@ export function Formulario() {
             <p className="resultado__texto">
               Lo tenemos con el numero <span className="referencia">{resultado.referencia}</span>. Te escribimos al{' '}
               {datos.telefono} dentro de las proximas 48 horas hábiles con el presupuesto cerrado.
+              {hoja ? ' Si querés guardar una copia, bajate la hoja del pedido.' : null}
             </p>
             <div className="acciones-fila">
               <a className="boton boton--linea" href={enlaceWhatsapp(texto)} target="_blank" rel="noreferrer">
                 <WhatsappLogo size={17} className="icono" aria-hidden="true" />
                 Avisar por WhatsApp
               </a>
+              {botonPdf}
             </div>
           </>
         ) : (
           <>
             <p className="resultado__texto">
-              No pudimos contactar al servidor del taller ({resultado.motivo}) asi que te descargamos el archivo{' '}
-              <span className="referencia">{resultado.archivo}</span> con todo el detalle. Mandanoslo por WhatsApp y
-              seguimos desde ahi.
+              No pudimos contactar al servidor del taller ({resultado.motivo}) asi que te descargamos{' '}
+              <span className="referencia">{resultado.archivo}</span> con todo el detalle: el mueble, tus datos y el
+              despiece. Mandanoslo por WhatsApp y seguimos desde ahi.
             </p>
             <div className="acciones-fila">
               <a className="boton" href={enlaceWhatsapp(texto)} target="_blank" rel="noreferrer">
                 <WhatsappLogo size={17} className="icono" aria-hidden="true" />
                 Enviar por WhatsApp
               </a>
-              <a className="boton boton--linea" href={'mailto:' + TALLER.email}>
-                Escribir un mail
-              </a>
+              {botonPdf}
             </div>
           </>
         )}
@@ -239,7 +242,7 @@ export function Formulario() {
       </button>
 
       <p className="grupo__nota">
-        Se envia el mueble tal como lo armaste, una foto del visor y tus datos de contacto. Nada mas.
+        Armamos una hoja en PDF con el mueble, el dibujo y tus datos, y te la damos para descargar. Nada mas.
       </p>
     </form>
   )

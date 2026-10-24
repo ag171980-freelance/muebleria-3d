@@ -49,7 +49,8 @@ export function resumenDelPedido(c: Configuracion, d: Despiece, computo: Computo
   if (herraje && d.cajones.length + d.puertas.length > 0) resumen.Herraje = herraje.nombre
   if (base) resumen.Base = base.nombre + (base.id === 'ninguna' ? '' : ' de ' + medidaCorta(c.alturaBase) + ' cm')
 
-  resumen.Placas = computo.placasEnteras + ' placas de 1,83 x 2,60 m'
+  resumen.Placas =
+    computo.placasEnteras + (computo.placasEnteras === 1 ? ' placa' : ' placas') + ' de 1,83 x 2,60 m'
   resumen.Peso = 'unos ' + computo.pesoKg + ' kg armado'
 
   return resumen

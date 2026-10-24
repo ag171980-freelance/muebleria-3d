@@ -3,8 +3,12 @@
  * Recibe los pedidos de presupuesto del configurador.
  *
  * Guarda cada pedido en api/data/pedidos/<referencia>.json, la miniatura del
- * mueble en api/data/pedidos/<referencia>.png, y agrega una linea al indice
+ * mueble en api/data/pedidos/<referencia>.png, la hoja para imprimir en
+ * api/data/pedidos/<referencia>.pdf, y agrega una linea al indice
  * api/data/pedidos.csv para abrirlo con una planilla.
+ *
+ * La hoja llega en un segundo POST, porque recien despues de responder este
+ * endpoint el navegador sabe que numero de pedido imprimir.
  *
  * Para que llegue un aviso por mail, completar DESTINATARIO y dejar
  * AVISAR_POR_MAIL en true. En XAMPP local el mail no sale si no esta
@@ -14,8 +18,10 @@
 declare(strict_types=1);
 
 const AVISAR_POR_MAIL = false;
-const DESTINATARIO = 'presupuestos@tallermendia.com.ar';
+const DESTINATARIO = 'presupuestos@ironwoods.com.ar';
 const LIMITE_BYTES = 3 * 1024 * 1024;
+/** Ventana para subir la hoja del pedido recien registrado, en segundos. */
+const PLAZO_HOJA = 600;
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
@@ -40,7 +46,39 @@ if (strlen($crudo) > LIMITE_BYTES) {
 }
 
 $pedido = json_decode($crudo, true);
-if (!is_array($pedido) || !isset($pedido['contacto'], $pedido['config'])) {
+if (!is_array($pedido)) {
+    responder(400, ['ok' => false, 'error' => 'El pedido no tiene el formato esperado.']);
+}
+
+$base = __DIR__ . '/data';
+$carpeta = $base . '/pedidos';
+
+/**
+ * Guarda la hoja del pedido. Solo se acepta para un pedido que exista, que
+ * todavia no tenga hoja y que se haya registrado recien: asi la direccion no
+ * sirve para pisar hojas viejas probando numeros al azar.
+ */
+if (($pedido['accion'] ?? '') === 'pdf') {
+    $referencia = (string)($pedido['referencia'] ?? '');
+    if (preg_match('/^\d{8}-[0-9A-F]{6}$/', $referencia) !== 1) {
+        responder(400, ['ok' => false, 'error' => 'El numero de pedido no es valido.']);
+    }
+    $archivoRegistro = $carpeta . '/' . $referencia . '.json';
+    $hoja = $carpeta . '/' . $referencia . '.pdf';
+    if (!is_file($archivoRegistro) || file_exists($hoja) || time() - (int)filemtime($archivoRegistro) > PLAZO_HOJA) {
+        responder(409, ['ok' => false, 'error' => 'Ese pedido ya no admite una hoja nueva.']);
+    }
+    $binario = base64_decode((string)($pedido['pdf'] ?? ''), true);
+    if ($binario === false || strncmp($binario, '%PDF-', 5) !== 0 || strlen($binario) > LIMITE_BYTES) {
+        responder(422, ['ok' => false, 'error' => 'La hoja no llego como un PDF.']);
+    }
+    if (file_put_contents($hoja, $binario, LOCK_EX) === false) {
+        responder(500, ['ok' => false, 'error' => 'No se pudo guardar la hoja.']);
+    }
+    responder(200, ['ok' => true, 'referencia' => $referencia, 'hoja' => $referencia . '.pdf']);
+}
+
+if (!isset($pedido['contacto'], $pedido['config'])) {
     responder(400, ['ok' => false, 'error' => 'El pedido no tiene el formato esperado.']);
 }
 
@@ -51,8 +89,6 @@ if ($nombre === '' || $telefono === '') {
     responder(422, ['ok' => false, 'error' => 'Hace falta el nombre y un telefono de contacto.']);
 }
 
-$base = __DIR__ . '/data';
-$carpeta = $base . '/pedidos';
 if (!is_dir($carpeta) && !mkdir($carpeta, 0750, true) && !is_dir($carpeta)) {
     responder(500, ['ok' => false, 'error' => 'No se pudo preparar la carpeta de pedidos.']);
 }

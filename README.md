@@ -164,16 +164,17 @@ El sitio funciona con rutas relativas (`base: './'` en `vite.config.ts`), así q
 anda igual en la raíz del dominio o en un subdirectorio.
 
 En el servidor de desarrollo de Vite el PHP **no** se ejecuta. El formulario lo
-detecta: si no puede contactar al endpoint, descarga el pedido como archivo JSON y
-le ofrece al cliente mandarlo por WhatsApp. No se pierde ningún pedido.
+detecta: si no puede contactar al endpoint, le descarga al cliente la hoja del
+pedido en PDF y le ofrece mandarla por WhatsApp. No se pierde ningún pedido.
 
 ## Dónde caen los pedidos
 
-`api/presupuesto.php` guarda cada pedido en tres lugares:
+`api/presupuesto.php` guarda cada pedido en cuatro lugares:
 
 | Archivo | Para qué sirve |
 | --- | --- |
 | `api/data/pedidos/<ref>.json` | El pedido completo: configuración, cómputo y contacto |
+| `api/data/pedidos/<ref>.pdf` | La hoja para imprimir: logo, dibujo, datos y despiece |
 | `api/data/pedidos/<ref>.png` | Foto del mueble tal como lo dejó el cliente |
 | `api/data/pedidos.csv` | Índice para abrir con Excel o LibreOffice |
 
@@ -184,6 +185,30 @@ Verificá que Apache tenga `AllowOverride All` para ese directorio, o movelá fu
 Para recibir un aviso por mail, en `public/api/presupuesto.php` poné
 `AVISAR_POR_MAIL = true` y completá `DESTINATARIO`. XAMPP local no manda mail sin
 configurar sendmail; el pedido queda guardado igual.
+
+## La hoja del pedido, en PDF
+
+`src/lib/pdf.ts` arma una hoja A4 con el lockup de la marca arriba, el dibujo del
+visor, el mueble en texto, los datos del formulario, el link que reabre el diseño y
+el despiece para cortar. Es lo que el carpintero imprime y lo que el cliente se
+descarga como comprobante.
+
+Tres decisiones que conviene conocer:
+
+- **El logo va en texto, no en imagen.** Times es la serif que ya figura como
+  alternativa de Unna en la hoja de estilos, así que la hoja sale con la misma cara
+  sin tener que embeber ninguna tipografía ni arrastrar un PNG.
+- **jsPDF se carga a demanda** (`await import('jspdf')`). Son unos 350 kB que solo
+  hacen falta cuando alguien manda el pedido, y no tienen por qué viajar en la
+  carga inicial.
+- **La hoja se sube en un segundo POST.** El número de pedido lo asigna el
+  servidor, así que recién después de su respuesta se puede imprimir en la hoja. El
+  endpoint acepta ese segundo POST solo para un pedido que exista, que todavía no
+  tenga hoja y que se haya registrado hace menos de diez minutos; así la dirección
+  no sirve para pisar hojas viejas probando números al azar.
+
+Si el PDF no se puede armar, el pedido se manda igual: lo que no puede pasar es que
+el cliente pierda el envío por un problema de impresión.
 
 ## No hay precios en la aplicación
 
