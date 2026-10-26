@@ -25,7 +25,7 @@ function GrupoChips({
   alElegir: (valor: string) => void
 }) {
   // Con una sola opcion igual se muestra: el chip de medida comunica el tamaño
-  // aunque no haya nada que elegir, como en la tienda de la marca.
+  // aunque no haya nada que elegir, para que todas las tarjetas midan igual.
   if (opciones.length === 0) return null
   return (
     <div className="chips" role="group" aria-label={titulo}>
@@ -45,8 +45,8 @@ function GrupoChips({
 }
 
 /**
- * Tarjeta del catalogo, con las mismas opciones que la marca muestra en su
- * tienda: estructura, madera, medida y laqueado.
+ * Tarjeta del catalogo, con las opciones que se pueden elegir desde afuera:
+ * estructura, madera, medida y laqueado.
  *
  * Lo que se elige acá se ve al toque en la vista previa y viaja al
  * configurador, asi el cliente no tiene que volver a elegir lo mismo adentro.

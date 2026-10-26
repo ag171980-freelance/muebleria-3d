@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 export type Tema = 'auto' | 'claro' | 'oscuro'
-const CLAVE = 'ironwoods.tema.v1'
+const CLAVE = 'configurador.tema.v1'
 
 /** Fondo de la escena 3D por tema. Tiene que coincidir con --papel-2 de tokens.css. */
 export const FONDO_ESCENA: Record<'claro' | 'oscuro', string> = {

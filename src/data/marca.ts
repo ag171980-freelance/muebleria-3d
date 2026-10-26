@@ -1,23 +1,40 @@
 /**
  * DATOS DE LA MARCA
  *
- * Tomados de ironwoods.com.ar. El numero de WhatsApp y el Instagram son los que
- * publica el sitio; no encontre un mail publicado, asi que el contacto por mail
- * queda apagado hasta que lo confirmen.
+ * Esta es la demo generica: no es el taller de nadie. Para mostrarsela a una
+ * marca, completar este objeto con sus datos y el encabezado, el pie y la hoja
+ * en PDF quedan a su nombre solos. Es el unico archivo que hay que tocar.
+ *
+ * Los datos de contacto van vacios a proposito. Cada campo vacio se esconde en
+ * vez de quedar como un enlace roto, asi que la demo no manda a nadie a un
+ * telefono ni a un sitio que no es suyo.
  */
-export const MARCA = {
-  /** Como se llaman de verdad, segun los datos estructurados de su sitio. */
-  nombre: 'IRON & WOOD',
-  /** Su propia bajada, tal como la usan bajo el nombre en el encabezado. */
-  bajada: 'Muebles de hierro y madera',
-  /** Su logo dice "BELLA VISTA": es donde esta el taller. */
-  zona: 'Bella Vista',
-  whatsapp: '5491154196090',
-  instagram: 'iron.woods',
-  sitio: 'https://ironwoods.com.ar',
-  /** Poner el mail cuando lo confirmen y el pie lo muestra solo. */
+export type Marca = {
+  nombre: string
+  bajada: string
+  zona: string
+  whatsapp: string
+  instagram: string
+  sitio: string
+  email: string
+}
+
+export const MARCA: Marca = {
+  /** Va en la serif, arriba de todo, y encabeza la hoja en PDF. */
+  nombre: 'TALLER DE MUEBLES',
+  /** La linea chica debajo del nombre. Se muestra en mayusculas. */
+  bajada: 'Hierro y madera',
+  /** Ciudad o barrio del taller. Vacio: el pie no la nombra. */
+  zona: '',
+  /** Con codigo de pais y sin signos, por ejemplo 5491122223333. */
+  whatsapp: '',
+  /** Usuario, sin la arroba. */
+  instagram: '',
+  /** Con https:// adelante. */
+  sitio: '',
+  /** Solo lo usa el pie, y recien cuando esta completo. */
   email: '',
-} as const
+}
 
 export type TipoEstructura = 'negra' | 'blanca'
 
@@ -36,9 +53,8 @@ export type Estructura = {
 }
 
 /**
- * Las dos unicas terminaciones de estructura que ofrece la marca, segun su
- * selector `pa_color-del-metal`: "Estructura Blanca" y "Estructura Negra",
- * las dos en pintura epoxi al horno.
+ * Las dos terminaciones de estructura del catalogo: blanca y negra, las dos en
+ * pintura epoxi al horno. Alcanzan para casi cualquier taller de hierro.
  */
 export const ESTRUCTURAS: Estructura[] = [
   {
@@ -62,9 +78,9 @@ export const ESTRUCTURAS: Estructura[] = [
 export const ESTRUCTURA_POR_ID = new Map(ESTRUCTURAS.map((e) => [e.id, e]))
 
 /**
- * Secciones de caño que usa cada familia de mueble, en mm. Salen de las fichas
- * de producto: "Estructura de hierro 30x60" en escritorios, "25x25" en el rack
- * y "20x20" en estanteria.
+ * Secciones de caño que usa cada familia de mueble, en mm. Son las medidas
+ * habituales del rubro: 30x60 en escritorios, 25x25 en el rack y 20x20 en
+ * estanteria, donde el caño carga menos.
  */
 export const CANIO = {
   escritorio: [60, 30] as [number, number],
@@ -83,10 +99,10 @@ export type EstiloPata = {
 /**
  * Como termina la pata en escritorios y mesas.
  *
- * El marco cerrado es el de la marca: en todas sus fotos la pata no son cuatro
- * postes sueltos sino dos marcos rectangulares de caño chato, uno en cada
- * extremo, con el travesaño de abajo apoyado en el piso. La cara ancha del caño
- * queda de costado, que es lo que le da el aspecto macizo visto de perfil.
+ * El marco cerrado es el clasico del rubro: la pata no son cuatro postes
+ * sueltos sino dos marcos rectangulares de caño chato, uno en cada extremo, con
+ * el travesaño de abajo apoyado en el piso. La cara ancha del caño queda de
+ * costado, que es lo que le da el aspecto macizo visto de perfil.
  */
 export const PATAS: EstiloPata[] = [
   {

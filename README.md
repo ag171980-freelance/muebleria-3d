@@ -1,33 +1,57 @@
-# Configurador de Ironwoods
+# Configurador de muebles a medida
 
 Aplicación en React + Three.js donde el cliente arma su mueble de hierro y madera en
 3D, elige medidas, especie, laqueado y color de la estructura, y pide el presupuesto.
 El pedido llega con el detalle del mueble, el cómputo de materiales y una foto del
 visor.
 
-## De dónde sale la marca
+## Esta rama es la demo genérica
 
-Todo lo de marca está verificado contra ironwoods.com.ar, no inferido del nombre.
-Se leyó del CSS que sirve su tema Astra y de los selectores reales de su tienda.
+`main` no es el configurador de ningún taller en particular: es el ejemplo que se
+le muestra a una marca antes de vestirlo con la suya. No trae nombre, teléfono,
+Instagram ni sitio de nadie.
 
-**Paleta** (sus variables `--ast-global-color-N`): `#151616` casi negro (es el fondo
-de sus botones, encabezado y pie), `#393C40`, `#65696F`, `#737880`, `#F6F6F6` y
-blanco. Es **monocromática**: no tienen color de acento. La única calidez de la
-página viene de la madera del visor, y la interfaz se mantiene neutra a propósito
-para no pelearle el protagonismo.
+**Para ponerle una marca encima alcanza con `src/data/marca.ts`.** Completás el
+objeto `MARCA` y el encabezado, el pie del catálogo, el mensaje de WhatsApp y la
+hoja en PDF quedan a su nombre solos. Los campos de contacto que dejes vacíos no
+se muestran, así que nunca queda un enlace que no lleva a ningún lado.
 
-Una sola desviación: su gris más claro, `#737880`, da 4,11 de contraste sobre
-`#F6F6F6` y no llega al mínimo de 4,5 de WCAG AA para texto chico. Para `--tinta-3`
-se usa `#676C72`, el mismo gris dos pasos más oscuro, que da 4,90.
+| Campo | Dónde se ve |
+| --- | --- |
+| `nombre` | Encabezado, pie, membrete del PDF |
+| `bajada` | Debajo del nombre, en mayúsculas |
+| `zona` | Pie del catálogo y del PDF |
+| `whatsapp` | Botones de consulta y de envío del pedido |
+| `instagram`, `sitio`, `email` | Pie del catálogo |
 
-**Tipografías**: **DM Sans** 400/500 en interfaz y **Unna** 400 en títulos, que es
-exactamente lo que cargan (`h1..h6, .site-title` van en Unna). Son las dos del
-`fonts.googleapis.com` de su `<head>`.
+Sin `whatsapp` cargado los botones siguen andando: `wa.me` abre la aplicación con
+el mensaje ya escrito y deja elegir el destinatario. El circuito se puede mostrar
+completo sin mandarle la consulta al teléfono de nadie.
 
-**Radio de borde**: 3px, que es el que usan en casi todo (70 apariciones contra 14
-de 0px). Casi recto, como corresponde a un mueble de hierro.
+La identidad visual vive en `src/styles/tokens.css`. Si la marca tiene colores
+propios, se pisan ahí `--acento`, `--tinta` y `--papel`.
 
-**Construcción**, de sus fichas de producto:
+## Por qué la interfaz es gris
+
+La paleta es **monocromática** a propósito: no hay color de acento. El producto es
+hierro pintado al horno en blanco o negro más madera laqueada, y la única calidez
+de la página tiene que venir de la madera del visor. Una interfaz neutra no le
+pelea el protagonismo, y además arranca sin pertenecerle a nadie, que es lo que
+hace falta en una demo.
+
+`#151616` casi negro (fondo de botones, encabezado y pie), `#393C40`, `#65696F`,
+`#676C72`, `#F6F6F6` y blanco.
+
+Sobre `--tinta-3`: el gris `#737880` da 4,11 de contraste sobre `#F6F6F6` y no
+llega al mínimo de 4,5 de WCAG AA para texto chico. Va `#676C72`, el mismo gris dos
+pasos más oscuro, que da 4,90.
+
+**Tipografías**: **DM Sans** 400/500 en interfaz y **Unna** 400 en títulos.
+
+**Radio de borde**: 3px en casi todo. Casi recto, como corresponde a un mueble de
+hierro.
+
+**Construcción**, con las medidas corrientes del rubro:
 
 | Dato | Valor |
 | --- | --- |
@@ -396,10 +420,10 @@ Three.js se hace al dibujar, y a centímetros al mostrarlas en pantalla.
 ## Qué quedó del configurador anterior
 
 Las distribuciones `placar` y `estantes` siguen en el código pero ningún mueble del
-catálogo las usa: Ironwoods no vende placards. Quedaron porque funcionan y porque
-volver a enchufarlas es agregar una entrada en `modelos.ts`.
+catálogo las usa. Quedaron porque funcionan y porque volver a enchufarlas es
+agregar una entrada en `modelos.ts`.
 
-Las puertas **corredizas** y la **grilla de cajones** sí se siguen usando: el Rack TV
+Las puertas **corredizas** y la **grilla de cajones** sí se siguen usando: el rack de TV
 ofrece hojas batientes o corredizas, y los cajones se configuran a lo alto y a lo
 ancho en el rack y la cajonera.
 

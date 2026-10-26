@@ -4,8 +4,8 @@ import { normalizarAlturas } from './cajones'
 import type { PiezaDeLista } from './piezas'
 import type { Configuracion } from './tipos'
 
-const CLAVE_DISENIOS = 'ironwoods.disenios.v1'
-const CLAVE_BORRADOR = 'ironwoods.borrador.v1'
+const CLAVE_DISENIOS = 'configurador.disenios.v1'
+const CLAVE_BORRADOR = 'configurador.borrador.v1'
 
 export type DisenioGuardado = {
   id: string
@@ -278,7 +278,7 @@ export function descargar(nombre: string, contenido: string, tipo: string): void
 /** Texto para mandar por WhatsApp cuando el cliente prefiere escribir. */
 export function mensajeWhatsapp(pedido: Pick<Pedido, 'resumen' | 'enlace' | 'contacto'>): string {
   const lineas = [
-    'Hola! Armé un mueble en la pagina de Ironwoods y quiero presupuestarlo.',
+    'Hola! Armé un mueble en el configurador y quiero presupuestarlo.',
     '',
     ...Object.entries(pedido.resumen).map(([clave, valor]) => clave + ': ' + valor),
     '',
@@ -288,6 +288,12 @@ export function mensajeWhatsapp(pedido: Pick<Pedido, 'resumen' | 'enlace' | 'con
   return lineas.join('\n')
 }
 
+/**
+ * Sin numero cargado, wa.me abre WhatsApp con el mensaje ya escrito y deja
+ * elegir a quien mandarselo. Es el modo que documenta WhatsApp para compartir
+ * texto suelto, asi que la demo muestra el circuito entero sin mandarle la
+ * consulta al telefono de un tercero.
+ */
 export function enlaceWhatsapp(texto: string): string {
   return 'https://wa.me/' + TALLER.whatsapp + '?text=' + encodeURIComponent(texto)
 }

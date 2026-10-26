@@ -78,7 +78,7 @@ export async function armarPdf(datos: DatosPdf): Promise<{ blob: Blob; base64: s
     }
   }
 
-  // --- Encabezado: el mismo lockup del sitio ---
+  // --- Encabezado: el mismo lockup que la barra de arriba ---
   texto(datos.marca.nombre, HOJA.margen, y + 6, { fuente: 'times', tam: 19, espaciado: 0.5 })
   texto(datos.marca.bajada.toUpperCase(), HOJA.margen, y + 11, { tam: 6.5, color: GRIS, espaciado: 0.35 })
 
@@ -183,10 +183,17 @@ export async function armarPdf(datos: DatosPdf): Promise<{ blob: Blob; base64: s
   for (let i = 1; i <= hojas; i++) {
     doc.setPage(i)
     regla(PIE - 4)
-    texto(datos.marca.sitio.replace('https://', '') + '   @' + datos.marca.instagram + '   ' + datos.marca.zona, HOJA.margen, PIE, {
-      tam: 7.5,
-      color: GRIS,
-    })
+    // Solo los datos de contacto que esten cargados. En la demo generica no
+    // hay ninguno y el pie queda con la numeracion de hoja sola, en vez de con
+    // separadores sueltos.
+    const contacto = [
+      datos.marca.sitio.replace('https://', ''),
+      datos.marca.instagram ? '@' + datos.marca.instagram : '',
+      datos.marca.zona,
+    ].filter(Boolean)
+    if (contacto.length > 0) {
+      texto(contacto.join('   '), HOJA.margen, PIE, { tam: 7.5, color: GRIS })
+    }
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7.5)
     doc.setTextColor(...GRIS)

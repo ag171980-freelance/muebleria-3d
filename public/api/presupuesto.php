@@ -18,7 +18,7 @@
 declare(strict_types=1);
 
 const AVISAR_POR_MAIL = false;
-const DESTINATARIO = 'presupuestos@ironwoods.com.ar';
+const DESTINATARIO = 'presupuestos@example.com';
 const LIMITE_BYTES = 3 * 1024 * 1024;
 /** Ventana para subir la hoja del pedido recien registrado, en segundos. */
 const PLAZO_HOJA = 600;

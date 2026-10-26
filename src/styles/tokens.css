@@ -1,26 +1,24 @@
 /*
-  TOKENS DE IRONWOODS
+  TOKENS DE LA INTERFAZ
 
-  Todos los valores de abajo salen del sitio real (ironwoods.com.ar), no de una
-  interpretacion del nombre de la marca. Se leyeron del CSS que sirve el tema
-  Astra, de sus variables --ast-global-color-N:
+  La paleta es monocromatica a proposito: no hay ningun color de acento. El
+  producto es hierro pintado al horno en blanco o negro mas madera laqueada, y
+  la unica calidez de la pagina tiene que venir de la madera del visor. Una
+  interfaz neutra no le pelea el protagonismo.
 
-    #151616  casi negro, es el color de fondo de sus botones, encabezado y pie
+  Eso la vuelve, ademas, un buen punto de partida para cualquier taller: un gris
+  casi negro sobre blanco no es de nadie. Para vestir la demo con los colores de
+  una marca alcanza con pisar --acento, --tinta y --papel aca abajo.
+
+    #151616  casi negro, fondo de botones, encabezado y pie
     #393C40  gris oscuro
     #65696F  gris secundario
-    #737880  gris primario
+    #676C72  gris terciario
     #F6F6F6  superficie clara
     #FFFFFF  fondo de pagina
 
-  La paleta es monocromatica: no hay ningun color de acento. Es coherente con el
-  producto, que es hierro pintado al horno en blanco o negro mas madera laqueada.
-  La unica calidez de la pagina tiene que venir de la madera del visor, asi que
-  la interfaz se mantiene neutra a proposito y no le pelea el protagonismo.
-
-  UNICA DESVIACION: su gris mas claro, #737880, da 4,11 sobre #F6F6F6 y no llega
-  al minimo de 4,5 de WCAG AA para texto chico. Para --tinta-3 se usa #676C72,
-  que es el mismo gris dos pasos mas oscuro y da 4,90. El resto son sus valores
-  exactos.
+  Sobre --tinta-3: el gris #737880 da 4,11 sobre #F6F6F6 y no llega al minimo de
+  4,5 de WCAG AA para texto chico. Va #676C72, dos pasos mas oscuro, que da 4,90.
 
   Radios: el sitio usa 3px en casi todo (70 apariciones contra 14 de 0px).
   Escala unica y documentada, casi recta, como corresponde a un mueble de hierro.
@@ -58,7 +56,7 @@
   --ancho-panel: 408px;
   --curva: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Las dos familias que carga el sitio: DM Sans 400/500 y Unna 400 en titulos. */
+  /* Dos familias: DM Sans 400/500 para todo y Unna 400 en los titulos. */
   --sans: 'DM Sans Variable', 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --serif: 'Unna', Georgia, 'Times New Roman', serif;
 
@@ -66,9 +64,9 @@
 }
 
 /*
-  La marca no publica un modo oscuro. Este se deriva de su misma paleta: el
-  #151616 de sus botones pasa a ser el fondo y el #F6F6F6 de sus superficies
-  pasa a ser la tinta. Es la misma inversion que ya hacen sus botones.
+  El modo oscuro se deriva de la misma paleta, sin colores nuevos: el #151616 de
+  los botones pasa a ser el fondo y el #F6F6F6 de las superficies pasa a ser la
+  tinta. Es la misma inversion que ya hacen los botones en claro.
 */
 :root[data-tema='oscuro'] {
   --papel: #151616;

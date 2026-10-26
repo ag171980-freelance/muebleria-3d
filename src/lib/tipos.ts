@@ -84,8 +84,8 @@ export type Modelo = {
   tiposPuerta: TipoPuerta[]
   maxEstantes: number
   /**
-   * Las medidas que la marca publica como opcion en su tienda. Son el punto de
-   * partida; el configurador deja moverse entre medias porque fabrican a medida.
+   * Las medidas que el catalogo ofrece como opcion. Son el punto de partida; el
+   * configurador deja moverse entre medias porque todo se fabrica a medida.
    */
   medidas: MedidaDeCatalogo[]
   /** Escritorio en L: suma un ala perpendicular sobre el mismo bastidor. */

@@ -20,9 +20,9 @@ export function Encabezado({ resuelto, alternarTema }: Props) {
   return (
     <header className="barra">
       {/*
-        El mismo lockup del encabezado del sitio: el nombre en la serif de la
-        marca y la bajada abajo, chica y espaciada. Se rehace con texto y no con
-        el PNG del logo porque asi se adapta al modo oscuro y no se pixela.
+        El lockup de la marca: el nombre en la serif y la bajada abajo, chica y
+        espaciada. Va como texto y no como imagen, asi se adapta al modo oscuro,
+        no se pixela y cambiar de marca es editar una linea en MARCA.
       */}
       <button type="button" className="marca" onClick={verCatalogo}>
         <span className="marca__nombre">{TALLER.nombre}</span>

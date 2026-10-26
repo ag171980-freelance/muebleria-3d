@@ -1,16 +1,15 @@
 /**
- * MADERAS Y LAQUEADOS DE IRONWOODS
+ * MADERAS Y LAQUEADOS
  *
- * La marca separa dos cosas que no son lo mismo y conviene no mezclar:
+ * Son dos cosas distintas y conviene no mezclarlas:
  *
- *   - La ESPECIE (`pa_madera` en su tienda): eucalipto o pino. Define la veta,
- *     los nudos y el tono de base de la madera.
- *   - El LAQUEADO (`pa_laqueado`): Natural, Cedro, Nogal, Roble claro o Roble
- *     oscuro. Es el color con el que se laquea esa madera.
+ *   - La ESPECIE: eucalipto o pino. Define la veta, los nudos y el tono de base
+ *     de la madera.
+ *   - El LAQUEADO: Natural, Cedro, Nogal, Roble claro o Roble oscuro. Es el
+ *     color con el que se laquea esa madera.
  *
- * Las dos listas salen de los selectores reales de ironwoods.com.ar. Los
- * espesores tambien: 30 mm en tapas de escritorio y mesa, 20 mm en estantes,
- * rack y cajonera.
+ * Los espesores son los de uso corriente: 30 mm en tapas de escritorio y mesa,
+ * 20 mm en estantes, rack y cajonera.
  *
  * Los valores hexadecimales son aproximaciones de pantalla para que el cliente
  * se haga una idea del tono. No son una carta de color calibrada, y la pantalla

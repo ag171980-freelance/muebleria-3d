@@ -668,9 +668,9 @@ const RETIRO_PATA = 70
 /**
  * Escritorio y mesa: tapa de madera maciza sobre bastidor de hierro.
  *
- * La pata no son cuatro postes sueltos. En todas las fotos de la marca es un
- * marco rectangular de caño chato por cada extremo, con la cara ancha de
- * costado y el travesaño de abajo apoyado en el piso. Los dos marcos se unen
+ * La pata no son cuatro postes sueltos. Es un marco rectangular de caño chato
+ * por cada extremo, con la cara ancha de costado y el travesaño de abajo
+ * apoyado en el piso. Los dos marcos se unen
  * con un travesaño largo atras. Adelante no lleva nada: ahi van las rodillas.
  */
 function armarEscritorio(
@@ -830,8 +830,8 @@ function armarEscritorio(
 
   if (c.conEstanteCpu) {
     // La bandeja apoya dentro del marco izquierdo, sobre el travesaño de abajo,
-    // y se mete hacia adentro del escritorio. Es como la llevan en sus fotos:
-    // abajo y adentro del marco, no colgada bajo la tapa.
+    // y se mete hacia adentro del escritorio: abajo y adentro del marco, no
+    // colgada bajo la tapa.
     const espesorBandeja = 20
     const anchoBandeja = 340
     const yBandeja = (cerrado ? canto : 0) + Math.max(140, altoPata * 0.22) + espesorBandeja / 2

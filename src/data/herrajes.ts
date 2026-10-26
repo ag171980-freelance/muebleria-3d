@@ -59,9 +59,9 @@ export type Base = {
 }
 
 /**
- * Como apoya el mueble. Las tres son las que aparecen en el catalogo de la
- * marca: caño de hierro en el rack y las mesas de luz, ruedas giratorias en la
- * cajonera movil, y apoyo directo cuando el mueble va amurado.
+ * Como apoya el mueble. Las tres del catalogo: caño de hierro en el rack y las
+ * mesas de luz, ruedas giratorias en la cajonera movil, y apoyo directo cuando
+ * el mueble va amurado.
  */
 export const BASES: Base[] = [
   {

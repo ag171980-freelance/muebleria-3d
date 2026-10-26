@@ -27,8 +27,8 @@ p {
   margin: 0;
 }
 
-/* Ironwoods titula con Unna en 400. Es una serif, asi que no lleva el
-   apretado de letra que pide una grotesca: va con espaciado normal. */
+/* Los titulos van en Unna 400. Es una serif, asi que no lleva el apretado de
+   letra que pide una grotesca: va con espaciado normal. */
 h1,
 h2,
 h3 {
@@ -83,8 +83,8 @@ a {
 }
 
 /*
-  Mismo lockup que el encabezado del sitio: el nombre en Unna y debajo la
-  bajada en 10px, en mayusculas y bien espaciada.
+  El lockup de la marca, el mismo en la barra y en la hoja en PDF: el nombre
+  en Unna y debajo la bajada en 10px, en mayusculas y bien espaciada.
 */
 .marca {
   display: block;
@@ -131,8 +131,8 @@ a {
 
 .marca__bajada {
   /*
-    Su gris es #737880 y da 4,4 sobre blanco, apenas por debajo del minimo de
-    WCAG AA. Va el mismo gris dos pasos mas oscuro, que es --tinta-3.
+    El gris #737880 da 4,4 sobre blanco, apenas por debajo del minimo de WCAG
+    AA. Va el mismo gris dos pasos mas oscuro, que es --tinta-3.
   */
   font-size: 10px;
   color: var(--tinta-3);
@@ -398,8 +398,8 @@ a {
 }
 
 /*
-  Chips de opcion, como los de la tienda de la marca: rectangulos finitos con
-  borde, y el elegido se marca oscureciendo el borde, sin relleno.
+  Chips de opcion: rectangulos finitos con borde, y el elegido se marca
+  oscureciendo el borde, sin relleno.
 */
 .chips {
   display: flex;

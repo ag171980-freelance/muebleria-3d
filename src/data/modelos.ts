@@ -1,15 +1,14 @@
 import type { Configuracion, Modelo } from '../lib/tipos'
 
 /**
- * CATALOGO DE IRONWOODS
+ * CATALOGO DE MUEBLES
  *
- * Los muebles, las medidas y los espesores salen de las fichas de producto de
- * ironwoods.com.ar. Cada entrada anota de donde sale su medida inicial.
+ * Los muebles, las medidas y los espesores son los habituales de un taller de
+ * hierro y madera. Cada entrada anota de donde sale su medida inicial.
  *
- * Los rangos son mas amplios que la lista de la tienda a proposito: la marca
- * fabrica a medida ("Se fabrica a medida segun tu espacio"), asi que el
- * configurador deja moverse entre medidas y las de catalogo quedan como punto
- * de partida.
+ * Los rangos son mas amplios que la lista de medidas a proposito: todo se
+ * fabrica a medida, asi que el configurador deja moverse y las medidas de
+ * catalogo quedan como punto de partida.
  */
 
 const base = {
@@ -166,7 +165,7 @@ export const MODELOS: Modelo[] = [
       { etiqueta: '200 x 30 x 200 cm', ancho: 2000, alto: 2000, profundidad: 300 },
     ],
     distribucion: 'estanteria-hierro',
-    nombre: 'Estanteria Iron & Wood',
+    nombre: 'Estanteria de pared',
     resumen: 'Cinco estantes macizos de 20 mm pasantes entre parantes de hierro 20x20. Se amura a la pared.',
     grupos: ['estantes'],
     rangos: {
@@ -196,7 +195,7 @@ export const MODELOS: Modelo[] = [
       { etiqueta: '140 x 40 x 60 cm', ancho: 1400, alto: 600, profundidad: 400 },
     ],
     distribucion: 'columnas',
-    nombre: 'Rack TV Iron & Wood',
+    nombre: 'Rack de TV',
     resumen: 'Cuerpo de 20 mm con cajones de correderas telescopicas, sobre patas de hierro 25x25.',
     grupos: ['cajones', 'puertas', 'base', 'fondo'],
     rangos: {

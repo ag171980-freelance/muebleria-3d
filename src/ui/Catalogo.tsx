@@ -42,7 +42,7 @@ export function Catalogo({ tema }: { tema: 'claro' | 'oscuro' }) {
             </button>
             <a
               className="boton boton--linea"
-              href={enlaceWhatsapp('Hola! Quiero consultar por un mueble a medida de Ironwoods.')}
+              href={enlaceWhatsapp('Hola! Quiero consultar por un mueble a medida.')}
               target="_blank"
               rel="noreferrer"
             >
@@ -124,15 +124,23 @@ export function Catalogo({ tema }: { tema: 'claro' | 'oscuro' }) {
 
       <footer className="pie">
         <div className="pie__cuerpo">
-          <span>
-            {TALLER.nombre}, {TALLER.zona}
-          </span>
-          <a href={'https://instagram.com/' + TALLER.instagram} target="_blank" rel="noreferrer">
-            @{TALLER.instagram}
-          </a>
-          <a href={TALLER.sitio} target="_blank" rel="noreferrer">
-            ironwoods.com.ar
-          </a>
+          {/*
+            Cada dato de contacto aparece solo si esta cargado en MARCA. En la
+            demo generica no hay ninguno, asi que el pie queda con el nombre y
+            la aclaracion de fabricacion, sin enlaces que no llevan a ningun
+            lado.
+          */}
+          <span>{TALLER.zona ? TALLER.nombre + ', ' + TALLER.zona : TALLER.nombre}</span>
+          {TALLER.instagram ? (
+            <a href={'https://instagram.com/' + TALLER.instagram} target="_blank" rel="noreferrer">
+              @{TALLER.instagram}
+            </a>
+          ) : null}
+          {TALLER.sitio ? (
+            <a href={TALLER.sitio} target="_blank" rel="noreferrer">
+              {TALLER.sitio.replace('https://', '')}
+            </a>
+          ) : null}
           {TALLER.email ? <a href={'mailto:' + TALLER.email}>{TALLER.email}</a> : null}
           <span>Todo se fabrica a medida. Las medidas finales se confirman antes de cortar.</span>
         </div>
